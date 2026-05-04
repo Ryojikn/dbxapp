@@ -54,24 +54,31 @@ async function(nClicks, nSubmit, question, history) {
     question = question.trim();
     history  = history || [];
 
+    /* Extract genie_conv_id from the special __meta__ sentinel at index 0 */
+    var genieConvId = null;
+    var messages = [];
+    for (var i = 0; i < history.length; i++) {
+        if (history[i].role === '__meta__') {
+            genieConvId = history[i].genie_conv_id || null;
+        } else {
+            messages.push(history[i]);
+        }
+    }
+
     var el = document.getElementById('dash-chat-messages');
     if (!el) return [dc.no_update, dc.no_update, dc.no_update];
 
-    /* Clear input immediately */
     var inputEl = document.getElementById('dash-chat-input');
     if (inputEl) inputEl.value = '';
 
-    /* Remove intro placeholder on first send */
     var intro = el.querySelector('.chat-intro');
     if (intro) intro.remove();
 
-    /* User bubble — appears immediately */
     var userEl = document.createElement('div');
     userEl.className = 'chat-bubble chat-bubble--user';
     userEl.textContent = question;
     el.appendChild(userEl);
 
-    /* Typing indicator — three bouncing dots */
     var assistantEl = document.createElement('div');
     assistantEl.className = 'chat-bubble chat-bubble--assistant chat-typing';
     assistantEl.innerHTML = '<span></span><span></span><span></span>';
@@ -80,12 +87,17 @@ async function(nClicks, nSubmit, question, history) {
 
     var fullText = '';
     var streaming = false;
+    var newGenieConvId = genieConvId;
 
     try {
         var resp = await fetch('/api/chat-stream', {
             method:  'POST',
             headers: {'Content-Type': 'application/json'},
-            body:    JSON.stringify({question: question, history: history}),
+            body:    JSON.stringify({
+                question:      question,
+                history:       messages,
+                genie_conv_id: genieConvId,
+            }),
         });
 
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -113,9 +125,15 @@ async function(nClicks, nSubmit, question, history) {
                 var parsed;
                 try { parsed = JSON.parse(payload); } catch (e) { continue; }
 
+                /* Genie returns the conversation_id so follow-ups are routed correctly */
+                if (parsed.meta && parsed.meta.genie_conv_id) {
+                    newGenieConvId = parsed.meta.genie_conv_id;
+                    continue;
+                }
+
                 if (parsed.error) {
                     assistantEl.classList.remove('chat-typing', 'chat-streaming');
-                    assistantEl.textContent = 'Could not reach the model — try again.';
+                    assistantEl.textContent = 'Could not reach Genie — try again.';
                     fullText = assistantEl.textContent;
                     done = true;
                     break;
@@ -143,25 +161,22 @@ async function(nClicks, nSubmit, question, history) {
 
     assistantEl.classList.remove('chat-streaming');
 
-    var newHistory = history.concat([
+    var newMessages = messages.concat([
         {role: 'user',      content: question},
         {role: 'assistant', content: fullText || '(no response)'},
     ]).slice(-20);
 
-    /* Leave the DOM as-is (imperative bubbles own the display).
-       Only update the store and clear the input — returning children
-       here would cause React to double-render the bubbles. */
+    /* Prepend meta sentinel so conversation_id survives across turns */
+    var newHistory = newGenieConvId
+        ? [{role: '__meta__', genie_conv_id: newGenieConvId}].concat(newMessages)
+        : newMessages;
+
     return [dc.no_update, newHistory, ''];
 }
 """
 
 
 def register(app: dash.Dash) -> None:
-    genie_url = os.environ.get("GENIE_SPACE_URL", "")
-    if genie_url:
-        # Genie iframe is rendered instead of the chat panel; no callbacks needed.
-        return
-
     app.clientside_callback(
         _STREAM_FN,
         Output("dash-chat-messages", "children"),

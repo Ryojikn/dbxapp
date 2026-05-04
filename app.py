@@ -33,37 +33,112 @@ server = app.server
 
 # ── SSE streaming endpoint ───────────────────────────────────────────────────
 
+def _sse_response(gen_fn):
+    return Response(
+        stream_with_context(gen_fn()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no', 'Connection': 'keep-alive'},
+    )
+
+
+def _stream_text(text: str):
+    """Yield SSE token events for *text* word-by-word, then DONE."""
+    words = text.split(' ')
+    for i, word in enumerate(words):
+        token = ('' if i == 0 else ' ') + word
+        yield f"data: {_json.dumps({'token': token})}\n\n"
+        _time.sleep(0.022)
+    yield 'data: [DONE]\n\n'
+
+
 @server.route('/api/chat-stream', methods=['POST'])
 def _chat_stream():
-    """Server-Sent Events: streams LLM tokens (live) or fixture words (demo) to the browser."""
-    payload  = request.get_json(silent=True) or {}
-    question = (payload.get('question') or '').strip()
-    history  = payload.get('history') or []
+    """SSE: routes to Genie API, Model Serving, or fixture mode."""
+    payload       = request.get_json(silent=True) or {}
+    question      = (payload.get('question') or '').strip()
+    history       = payload.get('history') or []
+    genie_conv_id = payload.get('genie_conv_id') or None
 
-    demo_mode = os.environ.get('DEMO_MODE', 'fixture')
-    endpoint  = os.environ.get('DATABRICKS_SERVING_ENDPOINT', '')
+    genie_space_id = os.environ.get('GENIE_SPACE_ID', '')
+    demo_mode      = os.environ.get('DEMO_MODE', 'fixture')
+    endpoint       = os.environ.get('DATABRICKS_SERVING_ENDPOINT', '')
 
-    def generate():
-        if demo_mode != 'live' or not endpoint:
-            # Fixture mode: stream canned response word-by-word so the typewriter effect is visible
-            from data.fixtures import KPI_SUMMARY, CHAT_QA
+    # ── Mode 1: Genie Conversation API ──────────────────────────────────────
+    if genie_space_id:
+        def _genie_gen():
+            try:
+                from databricks.sdk import WorkspaceClient
+                w = WorkspaceClient()
+
+                if genie_conv_id:
+                    msg = w.genie.create_message(
+                        space_id=genie_space_id,
+                        conversation_id=genie_conv_id,
+                        content=question,
+                    )
+                    conv_id = genie_conv_id
+                else:
+                    conv = w.genie.start_conversation(
+                        space_id=genie_space_id,
+                        content=question,
+                    )
+                    msg     = conv
+                    conv_id = conv.conversation_id
+
+                # Poll until the message is complete (max 120 s)
+                message_id = msg.message_id
+                import time as _t
+                deadline = _t.time() + 120
+                while _t.time() < deadline:
+                    current = w.genie.get_message(
+                        space_id=genie_space_id,
+                        conversation_id=conv_id,
+                        message_id=message_id,
+                    )
+                    state = str(current.status).upper()
+                    if 'COMPLETED' in state or 'FAILED' in state or 'CANCELLED' in state:
+                        break
+                    _t.sleep(1.5)
+
+                # Extract text answer from attachments
+                text = None
+                if current.attachments:
+                    for att in current.attachments:
+                        if hasattr(att, 'text') and att.text and att.text.content:
+                            text = att.text.content
+                            break
+                if not text:
+                    text = "Genie returned a result but no text summary was included."
+
+                # Emit the conversation_id so the JS can send it on the next turn
+                yield f"data: {_json.dumps({'meta': {'genie_conv_id': conv_id}})}\n\n"
+                yield from _stream_text(text)
+
+            except Exception as exc:
+                import traceback; traceback.print_exc()
+                yield f"data: {_json.dumps({'error': str(exc)})}\n\n"
+                yield 'data: [DONE]\n\n'
+
+        return _sse_response(_genie_gen)
+
+    # ── Mode 2: Fixture / keyword-matched demo ───────────────────────────────
+    if demo_mode != 'live' or not endpoint:
+        def _fixture_gen():
+            from data.live import ALLBANK_DATA
             from data.chat import match_rule, render_response, get_chat_rules
             rules  = get_chat_rules()
             rule   = match_rule(question, rules)
-            answer = render_response(rule, KPI_SUMMARY, CHAT_QA)
-            words  = answer.split(' ')
-            for i, word in enumerate(words):
-                token = ('' if i == 0 else ' ') + word
-                yield f"data: {_json.dumps({'token': token})}\n\n"
-                _time.sleep(0.025)
-            yield 'data: [DONE]\n\n'
-            return
+            answer = render_response(rule, ALLBANK_DATA['kpi'], ALLBANK_DATA.get('chat_qa', {}))
+            yield from _stream_text(answer)
 
-        # Live mode: stream from Databricks Model Serving
-        # chat_cb._SYSTEM_PROMPT is built at import time from KPI_SUMMARY
+        return _sse_response(_fixture_gen)
+
+    # ── Mode 3: Databricks Model Serving (LLM) ───────────────────────────────
+    def _llm_gen():
         messages = [{'role': 'system', 'content': chat_cb._SYSTEM_PROMPT}]
         for turn in history[-6:]:
-            messages.append({'role': turn['role'], 'content': turn['content']})
+            if turn.get('role') in ('user', 'assistant'):
+                messages.append({'role': turn['role'], 'content': turn['content']})
         messages.append({'role': 'user', 'content': question})
 
         try:
@@ -72,14 +147,12 @@ def _chat_stream():
             w    = WorkspaceClient()
             host = w.config.host.rstrip('/')
             auth = w.config.authenticate()
-            print(f"[chat-stream] host={host!r} endpoint={endpoint!r} auth_keys={list(auth.keys())}", flush=True)
 
             with _requests.post(
                 f"{host}/serving-endpoints/{endpoint}/invocations",
                 headers={**auth, 'Content-Type': 'application/json'},
                 json={'messages': messages, 'max_tokens': 300, 'temperature': 0.1, 'stream': True},
-                stream=True,
-                timeout=30,
+                stream=True, timeout=30,
             ) as resp:
                 resp.raise_for_status()
                 for line in resp.iter_lines():
@@ -88,33 +161,23 @@ def _chat_stream():
                     line = line.decode('utf-8') if isinstance(line, bytes) else line
                     if not line.startswith('data: '):
                         continue
-                    data_str = line[6:].strip()
-                    if data_str == '[DONE]':
+                    ds = line[6:].strip()
+                    if ds == '[DONE]':
                         break
                     try:
-                        chunk = _json.loads(data_str)
-                        token = chunk['choices'][0]['delta'].get('content', '')
+                        token = _json.loads(ds)['choices'][0]['delta'].get('content', '')
                         if token:
                             yield f"data: {_json.dumps({'token': token})}\n\n"
                     except Exception:
                         pass
 
         except Exception as exc:
-            import traceback
-            traceback.print_exc()
+            import traceback; traceback.print_exc()
             yield f"data: {_json.dumps({'error': str(exc)})}\n\n"
 
         yield 'data: [DONE]\n\n'
 
-    return Response(
-        stream_with_context(generate()),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control':     'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection':        'keep-alive',
-        },
-    )
+    return _sse_response(_llm_gen)
 
 
 # ── Layout ──────────────────────────────────────────────────────────────────

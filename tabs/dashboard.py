@@ -1,7 +1,5 @@
 """Tab 3 — AllBank dashboard: KPI tiles, transaction trend, account mix, churn risk table, Genie panel."""
 
-import os
-
 import plotly.express as px
 import dash_bootstrap_components as dbc
 from dash import dcc, html, dash_table
@@ -9,8 +7,6 @@ import pandas as pd
 
 from data.live import ALLBANK_DATA
 from theme import PLOTLY_LAYOUT, CHART_COLORS
-
-_GENIE_SPACE_URL = os.environ.get("GENIE_SPACE_URL", "")
 
 _TABLE_HEADER_STYLE = {
     "backgroundColor": "#1A1815",
@@ -152,41 +148,23 @@ def _build_churn_table(churn_df: pd.DataFrame):
 
 
 def _build_genie_panel() -> html.Div:
-    header = html.Div([
-        "Ask the Data",
-        html.Span("Genie", className="chat-panel-badge"),
-    ], className="chat-panel-header")
+    """Chat panel backed by the Genie Conversation API (or fixture/LLM fallback)."""
+    import os
+    using_genie = bool(os.environ.get("GENIE_SPACE_ID", ""))
+    badge_text  = "Genie" if using_genie else "AI"
 
-    if _GENIE_SPACE_URL:
-        body = html.Div(
-            html.Iframe(
-                src=_GENIE_SPACE_URL,
-                style={
-                    "width":        "100%",
-                    "height":       "100%",
-                    "border":       "none",
-                    "borderRadius": "4px",
-                },
-            ),
-            style={"flex": "1", "minHeight": "0"},
-        )
-        return html.Div(
-            [header, body],
-            className="chat-panel",
-            style={"display": "flex", "flexDirection": "column", "height": "680px"},
-        )
-
-    # Fallback: LLM-backed chat (no Genie URL configured)
     return html.Div([
         html.Div([
-            header,
+            html.Div([
+                "Ask the Data",
+                html.Span(badge_text, className="chat-panel-badge"),
+            ], className="chat-panel-header"),
             html.Div(
                 id="dash-chat-messages",
                 className="chat-messages",
                 children=[
                     html.Div(
-                        "Ask about churn risk, account balances, transaction trends, or customer health. "
-                        "Set GENIE_SPACE_URL to embed the live AI/BI Genie Space.",
+                        "Ask about churn risk, account balances, transaction trends, or customer health.",
                         className="chat-intro",
                     ),
                 ],
@@ -210,7 +188,7 @@ def _build_genie_panel() -> html.Div:
                     ),
                 ]),
                 html.Div(
-                    "Try: 'churn risk', 'total balance', 'transaction volume', 'dormant accounts'",
+                    "Try: 'churn risk', 'dormant accounts', 'transaction volume', 'total balance'",
                     style={
                         "fontSize":   "var(--text-2xs)",
                         "color":      "var(--color-text-subtle)",
