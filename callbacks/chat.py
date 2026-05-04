@@ -11,31 +11,34 @@ import os
 import dash
 from dash import Input, Output, State
 
-from data.fixtures import KPI_SUMMARY
+from data.live import ALLBANK_DATA as _D
 
 _SERVING_ENDPOINT = os.environ.get("DATABRICKS_SERVING_ENDPOINT", "")
 
+_kpi = _D["kpi"]
 _SYSTEM_PROMPT = (
-    "You are a data analytics assistant embedded in a retail e-commerce dashboard. "
-    "Respond only to questions about the data below. "
+    "You are a data analytics assistant embedded in the AllBank executive dashboard. "
+    "AllBank is a fictional financial institution. "
+    "Respond only to questions about the AllBank data below. "
     "If greeted or asked something unrelated to the data, reply with one short sentence "
-    "inviting the user to ask about revenue, categories, orders, or anomalies — nothing else. "
+    "inviting the user to ask about churn risk, account balances, transactions, or dormant accounts. "
     "When answering data questions, be direct and concise: 2-3 sentences maximum. "
-    "Cite specific numbers from the dataset. Do not repeat every metric in every answer. "
-    "Do not use markdown headers or bullet lists unless the question explicitly asks for a breakdown.\n\n"
-    "Dataset — March 2025 (MTD):\n"
-    f"- Total Revenue: ${KPI_SUMMARY['total_revenue_mtd']:,.0f} "
-    f"(+{KPI_SUMMARY['revenue_mom_pct']:.0f}% vs February)\n"
-    f"- Total Orders: {KPI_SUMMARY['total_orders_mtd']:,} | "
-    f"Avg Order Value: ${KPI_SUMMARY['avg_order_value_mtd']:,.2f}\n"
-    f"- Top Category: {KPI_SUMMARY['top_category']} "
-    f"(${KPI_SUMMARY['top_category_revenue']:,.0f} revenue)\n"
-    f"- Fastest Growing: {KPI_SUMMARY['fastest_growing_category']} "
-    f"(+{KPI_SUMMARY['fastest_growing_qoq_pct']:.0f}% QoQ)\n"
-    f"- Active Anomalies: {KPI_SUMMARY['active_anomaly_count']} — "
-    "Electronics COGS spike on March 18: margin dropped from 23% to 6%, "
-    "linked to bulk order ORD-48821 (COGS +340% vs 7-day avg). "
-    "Recommended action: audit ORD-48821 and review Electronics cost records for March 16-20."
+    "Cite specific numbers. Do not use markdown headers or bullet lists unless the user asks.\n\n"
+    "AllBank Dataset — Q1 2026 snapshot:\n"
+    f"- Total Customers: {int(_kpi.get('total_customers', 2000)):,} "
+    f"({int(_kpi.get('churned_customers', 385)):,} churned to date)\n"
+    f"- High-Risk Churn Segment: {int(_kpi.get('high_risk_churn', 560)):,} customers\n"
+    f"- ML Model Predicted Churners: {int(_kpi.get('predicted_churners', 77))} "
+    f"({float(_kpi.get('churn_rate_pct', 19.3)):.1f}% of scored customers)\n"
+    f"- Avg Credit Score: {int(_kpi.get('avg_credit_score', 647))}\n"
+    f"- Total AUM: ${float(_kpi.get('total_aum', 24_447_921)) / 1e6:.1f}M across all account types\n"
+    f"- Total Accounts: {int(_kpi.get('total_accounts', 4178)):,} "
+    f"({int(_kpi.get('active_accounts', 2789)):,} active, "
+    f"{int(_kpi.get('dormant_accounts', 766)):,} dormant)\n"
+    "- Transaction Volume (Apr 2026): $39.5M across 39,517 transactions — "
+    "up from $6.5M in May 2025, showing strong growth.\n"
+    "- Account mix: Loan ($10.2M), CD ($5.9M), Checking ($4.1M), Savings ($3.3M), Credit Card ($0.95M)\n"
+    "- Top churn risk factors: high overdraft count, long inactivity, negative NPS score, low credit score."
 )
 
 # ── Clientside callback — async Promise, handles streaming entirely in JS ───
@@ -154,6 +157,11 @@ async function(nClicks, nSubmit, question, history) {
 
 
 def register(app: dash.Dash) -> None:
+    genie_url = os.environ.get("GENIE_SPACE_URL", "")
+    if genie_url:
+        # Genie iframe is rendered instead of the chat panel; no callbacks needed.
+        return
+
     app.clientside_callback(
         _STREAM_FN,
         Output("dash-chat-messages", "children"),

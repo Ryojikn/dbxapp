@@ -5,17 +5,20 @@ from dash import html
 
 
 _NARRATIVE_P1 = (
-    "Raw operational data arrives from dozens of sources — databases, SaaS platforms, "
-    "event streams, and file drops — but turning it into trusted, queryable analytics "
-    "assets takes weeks of fragile pipelines, duplicated governance work, and "
-    "hard-to-debug transformations."
+    "AllBank is a mid-size financial institution facing a converging set of pressures: "
+    "churn risk is rising, management waits days for basic business insights, analysts "
+    "are overwhelmed with ad-hoc requests, and business leaders openly distrust each "
+    "other's numbers. The root cause is technical — siloed data, no central governance, "
+    "fragile pipelines, and no observability."
 )
 
 _NARRATIVE_P2 = (
-    "This demo shows how the Databricks Lakehouse solves that: Auto Loader ingests raw "
-    "events into a Bronze layer, Lakeflow Declarative Pipelines curate them into Silver, "
-    "and enriched Gold tables are registered in Unity Catalog for unified governance, "
-    "lineage, and access control. The code on the right is the real pipeline."
+    "This demo shows how the Databricks Lakehouse resolves each of those concerns. "
+    "Lakeflow Declarative Pipelines ingest from operational systems using Auto Loader "
+    "and orchestrated by Databricks Jobs, transforming raw records through Bronze, "
+    "Silver, and Gold layers governed by Unity Catalog. Business leaders query Gold "
+    "tables directly via AI/BI Genie — in plain English, with full lineage — "
+    "eliminating the analyst bottleneck and rebuilding data trust."
 )
 
 _DEMO_CARDS = [
@@ -23,9 +26,10 @@ _DEMO_CARDS = [
         "index":    "01",
         "title":    "Architecture",
         "description": (
-            "Trace a retail transaction through source systems, Auto Loader ingestion, "
-            "three Medallion layers governed by Unity Catalog, and out to ML and BI "
-            "consumers. Every node is interactive."
+            "Trace an AllBank transaction through operational source systems, "
+            "Lakeflow Pipelines orchestrated by Databricks Jobs, three Medallion "
+            "layers governed by Unity Catalog, and out to AI/BI Genie, ML, and "
+            "anomaly-detection consumers. Every node is interactive."
         ),
         "tab":      "tab-architecture",
         "btn_id":   "home-nav-to-arch",
@@ -36,9 +40,9 @@ _DEMO_CARDS = [
         "index":    "02",
         "title":    "Dashboard",
         "description": (
-            "Gold layer in action: revenue KPIs, time-series trend, category breakdown, "
-            "and anomaly status table — all driven by a self-contained fixture dataset. "
-            "Ask questions using the chat panel."
+            "Gold layer in action: KPI tiles, trend charts, anomaly table, and "
+            "an embedded AI/BI Genie space — ask questions in plain English and "
+            "get governed, lineage-tracked answers without analyst intermediaries."
         ),
         "tab":      "tab-dashboard",
         "btn_id":   "home-nav-to-dash",
@@ -48,10 +52,10 @@ _DEMO_CARDS = [
 ]
 
 _METADATA = {
-    "Intended audience": "Data Engineers, Solutions Architects, Data Leaders",
-    "Data domain":       "Retail / E-Commerce Analytics (fixture dataset)",
+    "Customer scenario": "AllBank — Financial Services (fictional)",
+    "Intended audience": "Data Engineers, Solutions Architects, Business Leaders",
     "Platform":          "Databricks Lakehouse — Databricks Apps",
-    "Repository":        ("#", "GitHub Repository"),
+    "Key capabilities":  "Lakeflow Pipelines · Unity Catalog · AI/BI Genie · Mosaic AI",
     "Documentation":     ("https://docs.databricks.com", "Databricks Documentation"),
 }
 
@@ -79,11 +83,11 @@ def layout() -> html.Div:
         dbc.Row([
             # Left: copy — vertically centred against the terminal height
             dbc.Col([
-                html.Div("Reference architecture", className="home-hero-label"),
+                html.Div("AllBank · Financial Services", className="home-hero-label"),
                 html.H1("End-to-End Lakehouse", className="home-title"),
                 html.P(
-                    "From raw data to AI-powered insights — a live, interactive "
-                    "reference architecture on the Databricks Lakehouse Platform.",
+                    "From siloed, untrusted data to AI-powered insights — "
+                    "how Databricks solves AllBank's data, governance, and AI challenges.",
                     className="home-subtitle",
                 ),
                 html.P(_NARRATIVE_P1, className="home-narrative"),

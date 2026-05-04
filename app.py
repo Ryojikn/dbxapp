@@ -130,7 +130,7 @@ _HEADER = dbc.Navbar(
             style={"textDecoration": "none"},
         ),
         html.Span(
-            "Medallion Architecture · Unity Catalog · AI/BI",
+            "AllBank · Lakeflow Pipelines · Unity Catalog · AI/BI Genie",
             className="navbar-subtitle d-none d-md-inline",
         ),
         html.Div(

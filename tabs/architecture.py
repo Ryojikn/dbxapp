@@ -8,10 +8,11 @@ from data.architecture import get_elements, CYTOSCAPE_STYLESHEET
 cyto.load_extra_layouts()
 
 _NARRATIVE = (
-    "A retail transaction travels from operational source systems through Databricks "
-    "ingestion pipelines, across three Medallion refinement layers governed by Unity "
-    "Catalog, and out to downstream consumers: an ML model pipeline, an analytics "
-    "dashboard, and an AI anomaly agent. Select any node to explore that layer."
+    "An AllBank transaction travels from operational source systems — core banking "
+    "PostgreSQL, Salesforce CRM, and S3 file drops — through Lakeflow Declarative "
+    "Pipelines orchestrated by Databricks Jobs, across three Medallion layers governed "
+    "by Unity Catalog, and out to downstream consumers: an ML churn-prediction pipeline, "
+    "an AI/BI Genie dashboard, and an AI anomaly agent. Select any node to explore."
 )
 
 

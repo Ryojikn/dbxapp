@@ -120,34 +120,32 @@ def _compute_kpi(df: pd.DataFrame) -> dict:
 _DF       = get_dataframe()
 KPI_SUMMARY: dict = _compute_kpi(_DF)
 
-# Three pre-rehearsed chat Q&A pairs — values templated from KPI_SUMMARY so
-# they are always consistent with what the charts display.
-def _build_chat_qa(kpi: dict) -> dict[str, str]:
-    top_pct = round(kpi["top_category_revenue"] / kpi["total_revenue_mtd"] * 100)
-    return {
-        "revenue": (
-            f"As of March 31, total month-to-date revenue is "
-            f"${kpi['total_revenue_mtd']:,.0f} — up {kpi['revenue_mom_pct']:.0f}% "
-            f"month-over-month. {kpi['top_category']} leads with "
-            f"${kpi['top_category_revenue']:,.0f} ({top_pct}% of total revenue), "
-            f"followed by the other categories."
-        ),
-        "category": (
-            f"{kpi['fastest_growing_category']} is the fastest-growing category this quarter "
-            f"at +{kpi['fastest_growing_qoq_pct']:.0f}% QoQ, driven by seasonal demand in Q1. "
-            f"{kpi['top_category']} remains the highest absolute revenue contributor "
-            f"at ${kpi['top_category_revenue']:,.0f} for March."
-        ),
-        "anomaly": (
-            "Yes — one active anomaly is flagged in the Gold layer: on March 18, the "
-            "Electronics category saw a COGS spike of +340% vs the 7-day rolling average. "
-            "Revenue held at $48,230 but gross margin collapsed from 23% to 5.96%. "
-            "The likely cause is bulk order ORD-48821, which appears to have been priced "
-            "below cost. Recommended action: review cost-basis records for Electronics "
-            "orders from March 16–20 and escalate ORD-48821 to the procurement team "
-            "for correction."
-        ),
-    }
-
-
-CHAT_QA: dict[str, str] = _build_chat_qa(KPI_SUMMARY)
+# AllBank chat Q&A — used by the SSE fixture-mode stream
+CHAT_QA: dict[str, str] = {
+    "churn": (
+        "AllBank's ML model scored 400 customers and flagged 77 as predicted churners — "
+        "a 19.3% churn rate. Separately, 560 customers are classified as high-risk based "
+        "on behavioral signals: high overdraft counts, long inactivity, and negative NPS. "
+        "Recommended action: prioritise outreach for customers with both high churn probability "
+        "and a Detractor NPS score."
+    ),
+    "dormant": (
+        "766 accounts are classified as dormant across all account types — "
+        "261 checking, 223 savings, 157 credit card, 83 loan, and 42 CD accounts. "
+        "Dormancy correlates strongly with churn risk: the average days-inactive for "
+        "predicted churners is over 90 days. A re-engagement campaign targeting these "
+        "accounts could recover a meaningful share of at-risk AUM."
+    ),
+    "balance": (
+        "AllBank's total AUM is $24.4M across 4,178 accounts. "
+        "Loans are the largest contributor at $10.2M, followed by CDs at $5.9M, "
+        "checking at $4.1M, savings at $3.3M, and credit cards at $0.95M. "
+        "Average credit utilisation on credit card accounts is 27.9%."
+    ),
+    "transactions": (
+        "Transaction volume has grown nearly 6× in 12 months: from $6.5M in May 2025 "
+        "to $39.5M in April 2026, with 39,517 transactions processed that month. "
+        "Average transaction value has remained stable around $1,000, indicating "
+        "volume growth is driven by new customers and account activity, not ticket-size inflation."
+    ),
+}

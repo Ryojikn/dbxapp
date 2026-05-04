@@ -5,131 +5,137 @@ Provides Cytoscape elements (nodes + edges) for the Tab 2 diagram.
 
 _NODE_DESCRIPTIONS = {
     "postgres-db": (
-        "PostgreSQL is the primary operational database storing transactional "
-        "records — orders, customers, and product inventory. It feeds the data "
-        "platform via Change Data Capture (CDC), ensuring every committed row "
-        "is captured and ingested in near-real time."
+        "AllBank's core banking system runs on PostgreSQL, storing transactional "
+        "records — accounts, transactions, and customer profiles. Change Data Capture "
+        "(CDC) feeds every committed row into the Lakehouse in near-real time, "
+        "replacing fragile nightly ETL jobs that left management flying blind."
     ),
     "salesforce-crm": (
-        "Salesforce CRM holds customer relationship and sales pipeline data. "
-        "A scheduled export or REST API pull lands opportunity, account, and "
-        "contact records into the platform for enrichment alongside transactional data."
+        "Salesforce CRM holds customer relationship data — churn risk scores, "
+        "product holdings, and NPS history. A scheduled export lands opportunity "
+        "and contact records into the platform for enrichment alongside transactional "
+        "data, enabling the 360° customer view that previously required weeks of work."
     ),
     "s3-files": (
-        "S3 (and compatible object stores) receive batch file drops — supplier "
-        "cost sheets, marketing attribution exports, and third-party data feeds. "
-        "Auto Loader monitors these prefixes and ingests new files as they arrive."
+        "S3 (and compatible object stores) receive batch file drops — regulatory "
+        "reporting exports, third-party risk feeds, and partner data exchanges. "
+        "Auto Loader monitors these prefixes with event-notification triggers and "
+        "ingests new files incrementally with exactly-once semantics via checkpointing."
     ),
-    "kafka-stream": (
-        "Kafka delivers clickstream events and IoT sensor readings in real time. "
-        "A Lakeflow Declarative Pipeline (DLT) source reads from the Kafka topic "
-        "and lands events into the Bronze layer within seconds of production."
-    ),
-    "autoloader": (
-        "Auto Loader (cloudFiles) is Databricks' incremental file ingestion engine. "
-        "It detects new files in cloud storage using directory listing or event "
-        "notifications, checkpoints progress, and writes raw records into Bronze "
-        "Delta tables with exactly-once semantics."
+    "databricks-jobs": (
+        "Databricks Jobs orchestrates the end-to-end pipeline schedule — triggering "
+        "Lakeflow Pipeline runs, coordinating file-arrival dependencies, and chaining "
+        "downstream ML scoring and report refresh tasks. Retry logic, alerting, and "
+        "audit history are all managed centrally, replacing the fragmented scheduler "
+        "landscape that previously caused AllBank's data reliability issues."
     ),
     "dlt-pipeline": (
-        "Lakeflow Declarative Pipelines (formerly Delta Live Tables) define "
-        "Bronze-to-Silver-to-Gold transformations as SQL or Python declarations. "
-        "The pipeline engine handles dependency ordering, error recovery, and "
-        "data quality enforcement via expectations."
+        "Lakeflow Declarative Pipelines (formerly Delta Live Tables) are the core "
+        "of AllBank's ingestion and transformation layer. Auto Loader (cloudFiles) "
+        "is used inside the pipeline to ingest files from S3 and CDC feeds from "
+        "operational systems. The pipeline engine then applies declarative "
+        "Bronze-to-Silver-to-Gold transformations — deduplication, type enforcement, "
+        "and business-rule enrichment — with built-in data quality expectations that "
+        "replace the silent data failures that eroded business leader trust."
     ),
     "unity-catalog": (
-        "Unity Catalog is the unified governance layer for all data assets. It "
-        "provides a three-level namespace (catalog.schema.table), column-level "
-        "lineage, fine-grained access control, and a searchable metadata registry "
-        "spanning every Bronze, Silver, and Gold table in the platform."
+        "Unity Catalog is the unified governance layer that solves AllBank's siloed "
+        "data and trust problems. A three-level namespace (catalog.schema.table) "
+        "provides a single, auditable registry across every Bronze, Silver, and Gold "
+        "table. Column-level lineage, row/column masks, and attribute-based access "
+        "control ensure each business unit sees exactly what they're permitted to see — "
+        "eliminating the 'which number is right?' debates between teams."
     ),
     "bronze-layer": (
         "Bronze is the raw ingestion layer — data lands here exactly as it arrived "
         "from the source, with an appended ingestion timestamp and source identifier. "
         "No business logic is applied; Bronze is the immutable audit trail. "
-        "Schema-on-read and schema evolution are handled here."
+        "Schema evolution is handled automatically via Lakeflow Pipelines, "
+        "so source schema changes no longer break downstream consumers."
     ),
     "silver-layer": (
-        "Silver is the curated, validated layer. Records are deduplicated, "
-        "null-checked, typed correctly, and joined across sources. Silver tables "
-        "are conformed to a canonical domain model and registered in Unity Catalog "
-        "with column descriptions and data quality SLAs."
+        "Silver is the curated, validated layer. Lakeflow Pipelines deduplicate "
+        "records, enforce types, null-check critical fields, and join across sources "
+        "into a canonical domain model. Data quality expectations gate every row — "
+        "failures are quarantined rather than silently corrupting Gold, which was the "
+        "root cause of AllBank's analyst throughput and trust issues."
     ),
     "gold-layer": (
         "Gold holds business-ready, aggregated datasets optimised for specific "
-        "analytical use cases. Denormalised for query performance, these tables "
-        "are the single source of truth for dashboards, ML feature stores, and "
-        "the AI agent monitoring layer. Liquid Clustering keeps them fast as data grows."
+        "analytical use cases. Denormalised for query performance via Liquid Clustering, "
+        "these tables are the single source of truth for dashboards, ML feature stores, "
+        "and the AI/BI Genie layer. Because every Gold table is lineage-tracked in "
+        "Unity Catalog, business leaders can trace any KPI back to its source row."
     ),
     "ml-pipeline": (
         "The ML Model Pipeline reads feature tables from the Gold layer via the "
-        "Feature Engineering in Unity Catalog store, trains demand-forecast and "
+        "Feature Engineering in Unity Catalog store, trains churn-prediction and "
         "anomaly-detection models with MLflow tracking, and registers champions "
-        "to the UC Model Registry for scheduled batch scoring."
+        "to the UC Model Registry. Scheduled batch scoring runs via Databricks Jobs, "
+        "surfacing at-risk customers before they churn — AllBank's primary revenue concern."
     ),
     "bi-dashboard": (
-        "The BI / Analytics Dashboard queries Gold Delta tables through a SQL "
-        "Warehouse. KPI tiles, trend charts, and anomaly tables refresh on a "
-        "schedule or on user demand, giving business stakeholders a governed, "
-        "low-latency view of operational performance."
+        "AI/BI Genie and Databricks Apps give AllBank's business leaders a natural-"
+        "language interface over Gold Delta tables, served through a SQL Warehouse. "
+        "Executives ask questions in plain English and get governed, auditable answers — "
+        "no analyst intermediary required. This directly addresses the management "
+        "insight lag and the growing analyst headcount pressure."
     ),
     "ai-agent": (
-        "The Anomaly-Aware AI Agent monitors Gold-layer signals and dashboard "
-        "metrics using the Mosaic AI Agent Framework. When it detects a statistical "
-        "deviation — like a COGS spike or a margin collapse — it fires a natural-"
-        "language alert with a proposed remediation step, routed to the on-call team."
+        "The Anomaly-Aware AI Agent monitors Gold-layer signals using the Mosaic AI "
+        "Agent Framework. When it detects a statistical deviation — a churn rate spike, "
+        "a margin collapse, or an unusual transaction cluster — it fires a natural-"
+        "language alert with a proposed remediation step, routed to the on-call team. "
+        "Central observability, previously absent at AllBank, is now automated."
     ),
 }
 
 # Preset positions for all leaf nodes
 _POSITIONS = {
-    "postgres-db":    {"x": 80,   "y": 90},
-    "salesforce-crm": {"x": 80,   "y": 210},
-    "s3-files":       {"x": 80,   "y": 330},
-    "kafka-stream":   {"x": 80,   "y": 450},
-    "autoloader":     {"x": 295,  "y": 170},
-    "dlt-pipeline":   {"x": 295,  "y": 375},
-    "unity-catalog":  {"x": 645,  "y": 440},
-    "bronze-layer":   {"x": 490,  "y": 255},
-    "silver-layer":   {"x": 645,  "y": 255},
-    "gold-layer":     {"x": 800,  "y": 255},
-    "ml-pipeline":    {"x": 1010, "y": 170},
-    "bi-dashboard":   {"x": 1010, "y": 330},
-    "ai-agent":       {"x": 1010, "y": 450},
+    "postgres-db":      {"x": 80,   "y": 120},
+    "salesforce-crm":   {"x": 80,   "y": 255},
+    "s3-files":         {"x": 80,   "y": 390},
+    "databricks-jobs":  {"x": 295,  "y": 170},
+    "dlt-pipeline":     {"x": 295,  "y": 340},
+    "unity-catalog":    {"x": 645,  "y": 440},
+    "bronze-layer":     {"x": 490,  "y": 255},
+    "silver-layer":     {"x": 645,  "y": 255},
+    "gold-layer":       {"x": 800,  "y": 255},
+    "ml-pipeline":      {"x": 1010, "y": 170},
+    "bi-dashboard":     {"x": 1010, "y": 330},
+    "ai-agent":         {"x": 1010, "y": 450},
 }
 
 # Leaf node metadata: (id, label, category)
 _NODES_META = [
-    ("postgres-db",    "PostgreSQL DB",      "source"),
-    ("salesforce-crm", "Salesforce CRM",     "source"),
-    ("s3-files",       "S3 / File Drops",    "source"),
-    ("kafka-stream",   "Kafka Stream",       "source"),
-    ("autoloader",     "Auto Loader",        "ingestion"),
-    ("dlt-pipeline",   "Lakeflow Pipelines", "ingestion"),
-    ("unity-catalog",  "Unity Catalog",      "catalog"),
-    ("bronze-layer",   "Bronze",             "bronze"),
-    ("silver-layer",   "Silver",             "silver"),
-    ("gold-layer",     "Gold",               "gold"),
-    ("ml-pipeline",    "ML Pipeline",        "consumer"),
-    ("bi-dashboard",   "BI Dashboard",       "consumer"),
-    ("ai-agent",       "AI Agent",           "agent"),
+    ("postgres-db",     "PostgreSQL DB",       "source"),
+    ("salesforce-crm",  "Salesforce CRM",      "source"),
+    ("s3-files",        "S3 / File Drops",     "source"),
+    ("databricks-jobs", "Databricks Jobs",     "ingestion"),
+    ("dlt-pipeline",    "Lakeflow Pipelines",  "ingestion"),
+    ("unity-catalog",   "Unity Catalog",       "catalog"),
+    ("bronze-layer",    "Bronze",              "bronze"),
+    ("silver-layer",    "Silver",              "silver"),
+    ("gold-layer",      "Gold",                "gold"),
+    ("ml-pipeline",     "ML Pipeline",         "consumer"),
+    ("bi-dashboard",    "AI/BI + Genie",       "consumer"),
+    ("ai-agent",        "AI Agent",            "agent"),
 ]
 
 # Parent zone assignment for each leaf node
 _NODE_PARENTS = {
-    "postgres-db":    "zone-sources",
-    "salesforce-crm": "zone-sources",
-    "s3-files":       "zone-sources",
-    "kafka-stream":   "zone-sources",
-    "autoloader":     "zone-ingestion",
-    "dlt-pipeline":   "zone-ingestion",
-    "bronze-layer":   "zone-medallion",
-    "silver-layer":   "zone-medallion",
-    "gold-layer":     "zone-medallion",
-    "unity-catalog":  "zone-medallion",
-    "ml-pipeline":    "zone-insights",
-    "bi-dashboard":   "zone-insights",
-    "ai-agent":       "zone-insights",
+    "postgres-db":     "zone-sources",
+    "salesforce-crm":  "zone-sources",
+    "s3-files":        "zone-sources",
+    "databricks-jobs": "zone-ingestion",
+    "dlt-pipeline":    "zone-ingestion",
+    "bronze-layer":    "zone-medallion",
+    "silver-layer":    "zone-medallion",
+    "gold-layer":      "zone-medallion",
+    "unity-catalog":   "zone-medallion",
+    "ml-pipeline":     "zone-insights",
+    "bi-dashboard":    "zone-insights",
+    "ai-agent":        "zone-insights",
 }
 
 # Zone compound nodes (rendered as background regions)
@@ -159,20 +165,18 @@ _ZONE_NODES = [
 ]
 
 _EDGES_META = [
-    ("postgres-db",    "autoloader",     None),
-    ("salesforce-crm", "autoloader",     None),
-    ("s3-files",       "autoloader",     None),
-    ("kafka-stream",   "dlt-pipeline",   None),
-    ("autoloader",     "bronze-layer",   "ingest"),
-    ("dlt-pipeline",   "bronze-layer",   "ingest"),
-    ("bronze-layer",   "silver-layer",   "refine"),
-    ("silver-layer",   "gold-layer",     "enrich"),
-    ("bronze-layer",   "unity-catalog",  "register"),
-    ("silver-layer",   "unity-catalog",  "register"),
-    ("gold-layer",     "unity-catalog",  "register"),
-    ("gold-layer",     "ml-pipeline",    "features"),
-    ("gold-layer",     "bi-dashboard",   "query"),
-    ("gold-layer",     "ai-agent",       "monitor"),
+    ("postgres-db",     "dlt-pipeline",    None),
+    ("salesforce-crm",  "dlt-pipeline",    None),
+    ("s3-files",        "dlt-pipeline",    None),
+    ("databricks-jobs", "dlt-pipeline",    "orchestrate"),
+    ("dlt-pipeline",    "bronze-layer",    "ingest"),
+    ("bronze-layer",    "silver-layer",    "refine"),
+    ("silver-layer",    "gold-layer",      "enrich"),
+    ("bronze-layer",    "unity-catalog",   "register"),
+    ("silver-layer",    "unity-catalog",   "register"),
+    ("gold-layer",      "unity-catalog",   "register"),
+    ("gold-layer",      "ml-pipeline",     "features"),
+    ("gold-layer",      "bi-dashboard",    "query")
 ]
 
 # Category colors used in the stylesheet

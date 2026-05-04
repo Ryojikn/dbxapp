@@ -1,51 +1,48 @@
 """
-Chat response logic for the Databricks Platform Demo App.
-Uses keyword matching over pre-baked responses.
-Optional passthrough to Databricks Model Serving when DEMO_MODE=live.
+Chat response logic for the AllBank demo dashboard.
+Keyword-matched fixture responses; live passthrough uses the LLM-backed SSE stream.
 """
 
 from __future__ import annotations
 
 _RULES: list[dict] = [
     {
-        "id":               "anomaly-query",
+        "id":               "churn-query",
         "trigger_keywords": [
-            "anomal", "unusual", "investigat", "alert", "problem",
-            "issue", "flag", "warning", "spike", "wrong", "weird",
+            "churn", "at-risk", "at risk", "risk", "lose", "losing",
+            "retention", "predict", "leaving",
         ],
-        "response_key":     "anomaly",
-        "is_anomaly_rule":  True,
+        "response_key":     "churn",
         "priority":         0,
     },
     {
-        "id":               "revenue-query",
-        "trigger_keywords": ["revenue", "sales", "total", "how much", "money", "earn"],
-        "response_key":     "revenue",
-        "is_anomaly_rule":  False,
+        "id":               "dormant-query",
+        "trigger_keywords": ["dormant", "inactive", "sleeping", "idle", "not active"],
+        "response_key":     "dormant",
         "priority":         1,
     },
     {
-        "id":               "category-query",
-        "trigger_keywords": [
-            "categor", "product", "segment", "best", "top",
-            "grow", "fastest", "perform", "sport", "electron", "apparel",
-        ],
-        "response_key":     "category",
-        "is_anomaly_rule":  False,
+        "id":               "balance-query",
+        "trigger_keywords": ["balance", "aum", "asset", "deposit", "money", "total"],
+        "response_key":     "balance",
         "priority":         2,
     },
     {
-        "id":               "orders-query",
-        "trigger_keywords": ["order", "transaction", "volume", "count", "customer"],
-        "response_key":     "orders",
-        "is_anomaly_rule":  False,
+        "id":               "transaction-query",
+        "trigger_keywords": ["transaction", "volume", "txn", "payment", "trend", "grow"],
+        "response_key":     "transactions",
         "priority":         3,
     },
     {
+        "id":               "customer-query",
+        "trigger_keywords": ["customer", "client", "account", "how many", "count"],
+        "response_key":     "customers",
+        "priority":         4,
+    },
+    {
         "id":               "fallback",
-        "trigger_keywords": [],   # always matches last
+        "trigger_keywords": [],
         "response_key":     "fallback",
-        "is_anomaly_rule":  False,
         "priority":         99,
     },
 ]
@@ -56,35 +53,31 @@ def get_chat_rules() -> list[dict]:
 
 
 def match_rule(question: str, rules: list[dict] | None = None) -> dict:
-    """Return the first matching rule for *question* (case-insensitive)."""
     if rules is None:
         rules = get_chat_rules()
     q = question.lower()
     for rule in sorted(rules, key=lambda r: r["priority"]):
-        if not rule["trigger_keywords"]:  # fallback
+        if not rule["trigger_keywords"]:
             continue
         if any(kw in q for kw in rule["trigger_keywords"]):
             return rule
-    # Fallback
     return next(r for r in rules if r["id"] == "fallback")
 
 
 def render_response(rule: dict, kpi: dict, chat_qa: dict) -> str:
-    """Return the pre-baked response string for *rule*, referencing *kpi* values."""
     key = rule["response_key"]
-
     if key in chat_qa:
         return chat_qa[key]
 
-    if key == "orders":
+    # Dynamic fallbacks using live KPI values
+    if key == "customers":
         return (
-            f"In March we processed {kpi['total_orders_mtd']:,} orders, "
-            f"with an average order value of ${kpi['avg_order_value_mtd']:,.2f}. "
-            f"Order volume is tracking {kpi['revenue_mom_pct']:.0f}% ahead of February."
+            f"AllBank has {int(kpi.get('total_customers', 2000)):,} total customers. "
+            f"Of those, {int(kpi.get('churned_customers', 385)):,} have already churned "
+            f"and {int(kpi.get('high_risk_churn', 560)):,} are in the high-risk churn segment."
         )
 
-    # fallback
     return (
-        "I can help you explore this data. Try asking about total revenue, "
-        "category performance, or whether there are any anomalies to investigate."
+        "I can help you explore AllBank's data. Try asking about churn risk, "
+        "dormant accounts, total AUM, or transaction volume trends."
     )
