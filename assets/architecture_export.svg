@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 560" width="1320" height="560" font-family="Inter, Arial, sans-serif">
+  <!-- Background -->
+  <rect width="1320" height="560" fill="#F8F9FA" rx="8"/>
+  <text x="660" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#1B1F23">Databricks End-to-End Data Platform Reference Architecture</text>
+
+  <!-- Unity Catalog band -->
+  <rect x="430" y="175" width="420" height="200" rx="8" fill="none" stroke="#8E44AD" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="640" y="195" text-anchor="middle" font-size="11" fill="#8E44AD" font-weight="600">Unity Catalog — Governed Storage</text>
+
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#9E9E9E"/>
+    </marker>
+    <marker id="arr-uc" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#8E44AD"/>
+    </marker>
+  </defs>
+
+  <!-- ── Sources ── -->
+  <rect x="20"  y="60"  width="130" height="44" rx="6" fill="#5D8AA8"/>
+  <text x="85"  y="87"  text-anchor="middle" font-size="11" fill="white" font-weight="600">PostgreSQL DB</text>
+  <rect x="20"  y="170" width="130" height="44" rx="6" fill="#5D8AA8"/>
+  <text x="85"  y="197" text-anchor="middle" font-size="11" fill="white" font-weight="600">Salesforce CRM</text>
+  <rect x="20"  y="280" width="130" height="44" rx="6" fill="#5D8AA8"/>
+  <text x="85"  y="307" text-anchor="middle" font-size="11" fill="white" font-weight="600">S3 / File Drops</text>
+  <rect x="20"  y="390" width="130" height="44" rx="6" fill="#5D8AA8"/>
+  <text x="85"  y="417" text-anchor="middle" font-size="11" fill="white" font-weight="600">Kafka Stream</text>
+
+  <!-- ── Ingestion ── -->
+  <rect x="220" y="110" width="130" height="44" rx="6" fill="#E07B39"/>
+  <text x="285" y="132" text-anchor="middle" font-size="10" fill="white" font-weight="600">Auto Loader</text>
+  <text x="285" y="146" text-anchor="middle" font-size="10" fill="white">(DLT)</text>
+  <rect x="220" y="360" width="130" height="44" rx="6" fill="#E07B39"/>
+  <text x="285" y="378" text-anchor="middle" font-size="10" fill="white" font-weight="600">Lakeflow</text>
+  <text x="285" y="392" text-anchor="middle" font-size="10" fill="white">Pipelines</text>
+
+  <!-- ── Medallion ── -->
+  <rect x="450" y="215" width="110" height="50" rx="6" fill="#8D6748"/>
+  <text x="505" y="238" text-anchor="middle" font-size="11" fill="white" font-weight="600">Bronze</text>
+  <text x="505" y="254" text-anchor="middle" font-size="10" fill="white">Raw</text>
+  <rect x="585" y="215" width="110" height="50" rx="6" fill="#7F8C8D"/>
+  <text x="640" y="238" text-anchor="middle" font-size="11" fill="white" font-weight="600">Silver</text>
+  <text x="640" y="254" text-anchor="middle" font-size="10" fill="white">Curated</text>
+  <rect x="720" y="215" width="110" height="50" rx="6" fill="#D4AC0D"/>
+  <text x="775" y="238" text-anchor="middle" font-size="11" fill="#1B1F23" font-weight="600">Gold</text>
+  <text x="775" y="254" text-anchor="middle" font-size="10" fill="#1B1F23">Enriched</text>
+
+  <!-- ── Consumers ── -->
+  <rect x="890" y="190" width="130" height="44" rx="6" fill="#27AE60"/>
+  <text x="955" y="208" text-anchor="middle" font-size="10" fill="white" font-weight="600">ML Model</text>
+  <text x="955" y="224" text-anchor="middle" font-size="10" fill="white">Pipeline</text>
+  <rect x="890" y="310" width="130" height="44" rx="6" fill="#27AE60"/>
+  <text x="955" y="328" text-anchor="middle" font-size="10" fill="white" font-weight="600">BI / Analytics</text>
+  <text x="955" y="344" text-anchor="middle" font-size="10" fill="white">Dashboard</text>
+
+  <!-- ── AI Agent ── -->
+  <rect x="1090" y="250" width="130" height="50" rx="6" fill="#C0392B"/>
+  <text x="1155" y="271" text-anchor="middle" font-size="11" fill="white" font-weight="600">Anomaly</text>
+  <text x="1155" y="287" text-anchor="middle" font-size="10" fill="white">AI Agent</text>
+
+  <!-- Source → Ingestion arrows -->
+  <line x1="150" y1="82"  x2="218" y2="120" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="150" y1="192" x2="218" y2="132" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="150" y1="302" x2="218" y2="140" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="150" y1="412" x2="218" y2="378" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Ingestion → Bronze -->
+  <line x1="350" y1="132" x2="448" y2="235" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="350" y1="378" x2="448" y2="255" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Medallion flow -->
+  <line x1="560" y1="240" x2="583" y2="240" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="695" y1="240" x2="718" y2="240" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Gold → Consumers and Agent -->
+  <line x1="830" y1="230" x2="888" y2="212" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="830" y1="250" x2="888" y2="332" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="830" y1="240" x2="1088" y2="270" stroke="#9E9E9E" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- UC registration (dashed) -->
+  <line x1="505" y1="265" x2="600" y2="360" stroke="#8E44AD" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr-uc)"/>
+  <line x1="640" y1="265" x2="640" y2="360" stroke="#8E44AD" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr-uc)"/>
+  <line x1="775" y1="265" x2="680" y2="360" stroke="#8E44AD" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr-uc)"/>
+  <rect x="560" y="360" width="160" height="44" rx="6" fill="#8E44AD"/>
+  <text x="640" y="383" text-anchor="middle" font-size="11" fill="white" font-weight="600">Unity Catalog</text>
+  <text x="640" y="397" text-anchor="middle" font-size="10" fill="white">Governance &amp; Lineage</text>
+
+  <!-- Legend -->
+  <rect x="20" y="500" width="14" height="14" rx="2" fill="#5D8AA8"/>
+  <text x="40" y="512" font-size="10" fill="#333">Source Systems</text>
+  <rect x="130" y="500" width="14" height="14" rx="2" fill="#E07B39"/>
+  <text x="150" y="512" font-size="10" fill="#333">Ingestion</text>
+  <rect x="230" y="500" width="14" height="14" rx="2" fill="#8E44AD"/>
+  <text x="250" y="512" font-size="10" fill="#333">Unity Catalog</text>
+  <rect x="350" y="500" width="14" height="14" rx="2" fill="#8D6748"/>
+  <text x="370" y="512" font-size="10" fill="#333">Bronze</text>
+  <rect x="430" y="500" width="14" height="14" rx="2" fill="#7F8C8D"/>
+  <text x="450" y="512" font-size="10" fill="#333">Silver</text>
+  <rect x="510" y="500" width="14" height="14" rx="2" fill="#D4AC0D"/>
+  <text x="530" y="512" font-size="10" fill="#333">Gold</text>
+  <rect x="590" y="500" width="14" height="14" rx="2" fill="#27AE60"/>
+  <text x="610" y="512" font-size="10" fill="#333">Consumers</text>
+  <rect x="690" y="500" width="14" height="14" rx="2" fill="#C0392B"/>
+  <text x="710" y="512" font-size="10" fill="#333">Anomaly AI Agent</text>
+</svg>

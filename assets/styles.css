@@ -1,0 +1,34 @@
+/* Databricks Platform Demo — global overrides */
+
+body {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+/* Tab nav styling */
+.tab-content {
+  background: #FFFFFF;
+  border: 1px solid #DEE2E6;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  min-height: 600px;
+}
+
+/* KPI card left-border accents map to Bootstrap colours */
+.border-primary { border-left-color: #2C3E50 !important; }
+.border-danger  { border-left-color: #E74C3C !important; }
+
+/* Cytoscape container */
+#arch-diagram {
+  border-radius: 6px;
+  background: #FAFAFA;
+}
+
+/* Chat bubbles container */
+#dash-chat-messages {
+  background: #FAFAFA;
+  border-radius: 6px;
+  border: 1px solid #E9ECEF;
+}
+
+/* Anomaly table row highlight is handled inline in dash_table styles */
