@@ -1,4 +1,13 @@
 command:
   - sh
   - -c
-  - "gunicorn app:server --bind 0.0.0.0:${PORT:-8050} --timeout 120 --workers 1"
+  - "gunicorn app:server --bind 0.0.0.0:${PORT:-8050} --timeout 120 --workers 1 --worker-class gthread --threads 4"
+
+env:
+  - name: DEMO_MODE
+    value: "live"
+  - name: DATABRICKS_SERVING_ENDPOINT
+    value: "databricks-meta-llama-3-3-70b-instruct"
+  # DATABRICKS_HOST is auto-injected by Databricks Apps runtime — no need to set it here.
+  # DATABRICKS_TOKEN is not needed in Databricks Apps — SDK auth is used automatically.
+  # For local dev: copy .env.example → .env and fill in values.

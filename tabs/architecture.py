@@ -1,95 +1,54 @@
-"""Tab 2 — Architecture diagram with interactive node detail panel."""
+"""Tab 2 — Architecture diagram with zone bands and interactive detail panel."""
 
 import dash_cytoscape as cyto
-import dash_bootstrap_components as dbc
 from dash import html
 
 from data.architecture import get_elements, CYTOSCAPE_STYLESHEET
-from theme import CATEGORY_COLORS
 
-cyto.load_extra_layouts()   # enables 'dagre' layout
+cyto.load_extra_layouts()
 
 _NARRATIVE = (
-    "This diagram traces the journey of a retail transaction from its origin "
-    "in operational source systems, through Databricks ingestion pipelines, "
-    "across the three Medallion refinement layers (Bronze → Silver → Gold) "
-    "governed by Unity Catalog, and out to downstream consumers — a machine-"
-    "learning model pipeline, an analytics dashboard, and an anomaly-aware "
-    "AI agent that monitors the Gold layer for data quality signals."
+    "A retail transaction travels from operational source systems through Databricks "
+    "ingestion pipelines, across three Medallion refinement layers governed by Unity "
+    "Catalog, and out to downstream consumers: an ML model pipeline, an analytics "
+    "dashboard, and an AI anomaly agent. Select any node to explore that layer."
 )
-
-_LEGEND_ITEMS = [
-    ("source",    "Source Systems"),
-    ("ingestion", "Ingestion Pipelines"),
-    ("catalog",   "Unity Catalog"),
-    ("bronze",    "Bronze (Raw)"),
-    ("silver",    "Silver (Curated)"),
-    ("gold",      "Gold (Enriched)"),
-    ("consumer",  "Consumers"),
-    ("agent",     "AI Agent"),
-]
 
 
 def layout() -> html.Div:
     return html.Div([
-        html.H4("End-to-End Data Platform Architecture", className="mb-1 mt-2"),
-        html.P(_NARRATIVE, className="text-muted small mb-2"),
+        html.Div("Data Platform Architecture", className="section-label mt-3"),
+        html.P(_NARRATIVE, style={
+            "fontSize": "var(--text-sm)",
+            "color": "var(--color-text-muted)",
+            "lineHeight": "1.65",
+            "maxWidth": "80ch",
+            "marginBottom": "var(--sp-5)",
+        }),
 
-        # Diagram
-        dbc.Card(
+        html.Div(
             cyto.Cytoscape(
                 id="arch-diagram",
                 elements=get_elements(),
                 stylesheet=CYTOSCAPE_STYLESHEET,
                 layout={"name": "preset"},
-                style={"width": "100%", "height": "520px"},
+                style={"width": "100%", "height": "560px"},
                 responsive=True,
-                userZoomingEnabled=True,
-                userPanningEnabled=True,
+                userZoomingEnabled=False,
+                userPanningEnabled=False,
+                autoungrabify=True,
             ),
-            className="mb-2 shadow-sm",
+            className="arch-diagram-card",
+            style={"marginBottom": "var(--sp-5)"},
         ),
 
-        # Legend
-        dbc.Row(
-            [
-                dbc.Col(
-                    dbc.Badge(
-                        label,
-                        style={"backgroundColor": CATEGORY_COLORS[cat], "fontSize": "11px"},
-                        className="me-1",
-                    ),
-                    width="auto",
-                )
-                for cat, label in _LEGEND_ITEMS
-            ],
-            className="mb-3 gx-1",
-        ),
-
-        # Node detail panel
         html.Div(
             id="arch-node-detail",
             children=html.P(
-                "Hover over a node to see its description.",
-                className="text-muted fst-italic small",
+                "Select a node to explore the platform layer.",
+                className="arch-detail-hint",
             ),
-            style={"minHeight": "60px"},
+            className="arch-detail-panel",
         ),
 
-        # Export hint
-        html.Div([
-            html.Small(
-                "📸 To save the diagram: right-click the diagram area → Save image as…  "
-                "or use the download button below.",
-                className="text-muted",
-            ),
-            html.Br(),
-            html.A(
-                dbc.Button("⬇ Download Diagram SVG", size="sm", outline=True, color="secondary", className="mt-1"),
-                id="arch-export-link",
-                href="/assets/architecture_export.svg",
-                target="_blank",
-                download="databricks-architecture.svg",
-            ),
-        ], className="mt-1"),
-    ], style={"padding": "0 16px 24px"})
+    ], style={"padding": "0 var(--sp-4) var(--sp-8)"})

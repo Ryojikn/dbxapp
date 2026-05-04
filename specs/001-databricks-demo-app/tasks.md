@@ -31,12 +31,12 @@
 
 **⚠️ CRITICAL**: No tab work can begin until all Phase 0 tasks are complete.
 
-- [ ] T001 [BLOCKING] Create `requirements.txt` with pinned versions (`dash==2.17.0`, `plotly==5.22.0`, `dash-bootstrap-components==1.6.0`, `dash-cytoscape==1.0.2`, `pandas==2.2.2`, `requests==2.31.0`, `gunicorn==21.2.0`) and `.gitignore` (Python standard + `.env`) — `requirements.txt`, `.gitignore`
-- [ ] T002 [BLOCKING] Decide diagram approach: use `dash-cytoscape` (interactive hover; `dash-cytoscape==1.0.2` already in requirements.txt from T001). Add one-line comment `# Architecture diagram: dash_cytoscape with dagre layout (interactive hover)` to `app.py` — `app.py`
-- [ ] T003 [BLOCKING] Scaffold `app.py`: `dash.Dash` with `dbc.themes.BOOTSTRAP`, top-level layout with a branded header `dbc.Navbar`, `dcc.Tabs(id="app-tabs", value="tab-home")` containing three empty `dcc.Tab` children (value `tab-home` / `tab-architecture` / `tab-dashboard`), one `dcc.Store(id="tab-state-store", storage_type="memory")` for cross-tab state, and `server = app.server` exposed — `app.py`, `assets/styles.css`
-- [ ] T004 [BLOCKING] Write `app.yaml` declaring the Python runtime command `["gunicorn", "app:server", "--bind", "0.0.0.0:${PORT:-8050}", "--workers", "1"]` — `app.yaml`
-- [ ] T005 [BLOCKING] Write `theme.py`: Databricks brand color palette (deep red `#E04B2A`, dark `#1B1F23`, surface white `#FFFFFF`, text-muted `#6C757D`), spacing constants (`PAD_SM=8`, `PAD_MD=16`, `PAD_LG=24`), and Plotly base `layout_template` dict (background, font, gridlines) — `theme.py`
-- [ ] T006 [BLOCKING] Write `data/fixtures.py`: build 360-row Pandas DataFrame (`date`, `category`, `revenue`, `order_count`, `avg_order_value`, `cogs`, `gross_margin_pct`, `is_anomaly`, `anomaly_reason`, `anomaly_order_ref`); compute `KPI_SUMMARY` dict; export `CHAT_QA` dict with three pre-baked Q&A pairs (revenue, category growth, anomaly); all per `specs/001-databricks-demo-app/contracts/fixture-data.md` — `data/__init__.py`, `data/fixtures.py`
+- [x] T001 [BLOCKING] Create `requirements.txt` with pinned versions (`dash==2.17.0`, `plotly==5.22.0`, `dash-bootstrap-components==1.6.0`, `dash-cytoscape==1.0.2`, `pandas==2.2.2`, `requests==2.31.0`, `gunicorn==21.2.0`) and `.gitignore` (Python standard + `.env`) — `requirements.txt`, `.gitignore`
+- [x] T002 [BLOCKING] Decide diagram approach: use `dash-cytoscape` (interactive hover; `dash-cytoscape==1.0.2` already in requirements.txt from T001). Add one-line comment `# Architecture diagram: dash_cytoscape with dagre layout (interactive hover)` to `app.py` — `app.py`
+- [x] T003 [BLOCKING] Scaffold `app.py`: `dash.Dash` with `dbc.themes.BOOTSTRAP`, top-level layout with a branded header `dbc.Navbar`, `dcc.Tabs(id="app-tabs", value="tab-home")` containing three empty `dcc.Tab` children (value `tab-home` / `tab-architecture` / `tab-dashboard`), one `dcc.Store(id="tab-state-store", storage_type="memory")` for cross-tab state, and `server = app.server` exposed — `app.py`, `assets/styles.css`
+- [x] T004 [BLOCKING] Write `app.yaml` declaring the Python runtime command `["gunicorn", "app:server", "--bind", "0.0.0.0:${PORT:-8050}", "--workers", "1"]` — `app.yaml`
+- [x] T005 [BLOCKING] Write `theme.py`: Databricks brand color palette (deep red `#E04B2A`, dark `#1B1F23`, surface white `#FFFFFF`, text-muted `#6C757D`), spacing constants (`PAD_SM=8`, `PAD_MD=16`, `PAD_LG=24`), and Plotly base `layout_template` dict (background, font, gridlines) — `theme.py`
+- [x] T006 [BLOCKING] Write `data/fixtures.py`: build 360-row Pandas DataFrame (`date`, `category`, `revenue`, `order_count`, `avg_order_value`, `cogs`, `gross_margin_pct`, `is_anomaly`, `anomaly_reason`, `anomaly_order_ref`); compute `KPI_SUMMARY` dict; export `CHAT_QA` dict with three pre-baked Q&A pairs (revenue, category growth, anomaly); all per `specs/001-databricks-demo-app/contracts/fixture-data.md` — `data/__init__.py`, `data/fixtures.py`
 
 **Checkpoint**: `python -c "from data.fixtures import KPI_SUMMARY, CHAT_QA; print(KPI_SUMMARY)"` prints the KPI dict without error.
 
@@ -48,8 +48,8 @@
 
 **Depends on**: Phase 0 complete
 
-- [ ] T007 [P] Write `data/architecture.py`: 13 `ArchitectureNode` dicts + 14 `ArchitectureEdge` dicts; `get_elements()` returning the merged Cytoscape-format list; `get_node_description(node_id: str) -> str`; per `specs/001-databricks-demo-app/contracts/fixture-data.md` — `data/architecture.py`
-- [ ] T008 [P] Write `data/chat.py`: 5 `ChatRule` dicts with `trigger_keywords`, `response_template`, `is_anomaly_rule`, `priority`; `match_rule(question, rules) -> dict`; `render_response(rule, kpi) -> str`; per `specs/001-databricks-demo-app/contracts/fixture-data.md` — `data/chat.py`
+- [x] T007 [P] Write `data/architecture.py`: 13 `ArchitectureNode` dicts + 14 `ArchitectureEdge` dicts; `get_elements()` returning the merged Cytoscape-format list; `get_node_description(node_id: str) -> str`; per `specs/001-databricks-demo-app/contracts/fixture-data.md` — `data/architecture.py`
+- [x] T008 [P] Write `data/chat.py`: 5 `ChatRule` dicts with `trigger_keywords`, `response_template`, `is_anomaly_rule`, `priority`; `match_rule(question, rules) -> dict`; `render_response(rule, kpi) -> str`; per `specs/001-databricks-demo-app/contracts/fixture-data.md` — `data/chat.py`
 
 **Checkpoint**: `python -c "from data.architecture import get_elements; print(len(get_elements()))"` prints `27` (13 nodes + 14 edges). `python -c "from data.chat import match_rule, render_response, get_chat_rules; r=match_rule('anomaly', get_chat_rules()); print(r['is_anomaly_rule'])"` prints `True`.
 
@@ -65,14 +65,14 @@
 
 ### Implementation for US3
 
-- [ ] T101 [P] [US3] KPI tile row: four `dbc.Card` components in a `dbc.Row` reading `KPI_SUMMARY` from `data/fixtures.py`; display revenue (formatted `$2,847,392`), order count (`18,429`), avg order value (`$154.52`), and anomaly count (`1`, styled with `danger` color variant) — `tabs/dashboard.py`
-- [ ] T102 [P] [US3] Revenue trend chart: `px.line(df, x="date", y="revenue", color="category", template=LAYOUT_TEMPLATE)` from `data/fixtures.py`; wrapped in `dcc.Graph(id="trend-chart", figure=fig)`; title "Daily Revenue by Category — Jan–Mar 2025" — `tabs/dashboard.py`
-- [ ] T103 [P] [US3] Category breakdown chart: `px.bar(df.groupby("category")["revenue"].sum().reset_index(), x="category", y="revenue", color="category", template=LAYOUT_TEMPLATE)`; wrapped in `dcc.Graph(id="category-chart")`; title "Total Revenue by Category, Q1 2025" — `tabs/dashboard.py`
-- [ ] T104 [P] [US3] Anomaly status table: `dash_table.DataTable` showing date, category, gross_margin_pct, anomaly_reason for rows where `is_anomaly=True`; style anomaly rows with `backgroundColor="#FFF3CD"` (amber highlight) — `tabs/dashboard.py`
-- [ ] T105 [US3] Chat panel UI (layout only): right-side `dbc.Col(width=4)` containing `html.Div(id="chat-messages", style={"height":"360px","overflowY":"auto"})`, `dcc.Store(id="chat-history-store", storage_type="memory", data=[])`, `dcc.Input(id="chat-input", type="text", placeholder="Ask the data...")`, and a `dbc.Button("Send", id="chat-send-btn")` — `tabs/dashboard.py`
-- [ ] T106 [US3] Chat fixture callback in `callbacks/chat.py`: `@app.callback` on `chat-send-btn.n_clicks` + `chat-input.n_submit`; reads `chat-input.value` + `chat-history-store.data`; calls `match_rule` + `render_response` from `data/chat.py`; appends Q+A to history; returns updated `chat-history-store.data`, rendered `html.Div` bubbles in `chat-messages.children`, and `""` to clear `chat-input.value` — `callbacks/__init__.py`, `callbacks/chat.py`
-- [ ] T107 [US3] Live Model Serving wiring in `callbacks/chat.py`: read `os.environ.get("DEMO_MODE", "fixture")`; when `DEMO_MODE=live`, call `POST {DATABRICKS_HOST}/serving-endpoints/{DATABRICKS_SERVING_ENDPOINT}/invocations` with Bearer token and a system prompt seeded from `KPI_SUMMARY` values; 10-second timeout; fall back silently to fixture responder on any error; anomaly rule always uses fixture response regardless of mode — `callbacks/chat.py`, `.env.example`
-- [ ] T108 [SMOKE] [US3] Start app, navigate to Dashboard tab, verify no `dash.exceptions.DuplicateCallbackOutput` or layout errors in console; ask "total revenue", "fastest growing", "any anomalies" in chat; confirm all three return on-topic answers — _(manual smoke test)_
+- [x] T101 [P] [US3] KPI tile row: four `dbc.Card` components in a `dbc.Row` reading `KPI_SUMMARY` from `data/fixtures.py`; display revenue (formatted `$2,847,392`), order count (`18,429`), avg order value (`$154.52`), and anomaly count (`1`, styled with `danger` color variant) — `tabs/dashboard.py`
+- [x] T102 [P] [US3] Revenue trend chart: `px.line(df, x="date", y="revenue", color="category", template=LAYOUT_TEMPLATE)` from `data/fixtures.py`; wrapped in `dcc.Graph(id="trend-chart", figure=fig)`; title "Daily Revenue by Category — Jan–Mar 2025" — `tabs/dashboard.py`
+- [x] T103 [P] [US3] Category breakdown chart: `px.bar(df.groupby("category")["revenue"].sum().reset_index(), x="category", y="revenue", color="category", template=LAYOUT_TEMPLATE)`; wrapped in `dcc.Graph(id="category-chart")`; title "Total Revenue by Category, Q1 2025" — `tabs/dashboard.py`
+- [x] T104 [P] [US3] Anomaly status table: `dash_table.DataTable` showing date, category, gross_margin_pct, anomaly_reason for rows where `is_anomaly=True`; style anomaly rows with `backgroundColor="#FFF3CD"` (amber highlight) — `tabs/dashboard.py`
+- [x] T105 [US3] Chat panel UI (layout only): right-side `dbc.Col(width=4)` containing `html.Div(id="chat-messages", style={"height":"360px","overflowY":"auto"})`, `dcc.Store(id="chat-history-store", storage_type="memory", data=[])`, `dcc.Input(id="chat-input", type="text", placeholder="Ask the data...")`, and a `dbc.Button("Send", id="chat-send-btn")` — `tabs/dashboard.py`
+- [x] T106 [US3] Chat fixture callback in `callbacks/chat.py`: `@app.callback` on `chat-send-btn.n_clicks` + `chat-input.n_submit`; reads `chat-input.value` + `chat-history-store.data`; calls `match_rule` + `render_response` from `data/chat.py`; appends Q+A to history; returns updated `chat-history-store.data`, rendered `html.Div` bubbles in `chat-messages.children`, and `""` to clear `chat-input.value` — `callbacks/__init__.py`, `callbacks/chat.py`
+- [x] T107 [US3] Live Model Serving wiring in `callbacks/chat.py`: read `os.environ.get("DEMO_MODE", "fixture")`; when `DEMO_MODE=live`, call `POST {DATABRICKS_HOST}/serving-endpoints/{DATABRICKS_SERVING_ENDPOINT}/invocations` with Bearer token and a system prompt seeded from `KPI_SUMMARY` values; 10-second timeout; fall back silently to fixture responder on any error; anomaly rule always uses fixture response regardless of mode — `callbacks/chat.py`, `.env.example`
+- [x] T108 [SMOKE] [US3] Start app, navigate to Dashboard tab, verify no `dash.exceptions.DuplicateCallbackOutput` or layout errors in console; ask "total revenue", "fastest growing", "any anomalies" in chat; confirm all three return on-topic answers — _(manual smoke test)_
 
 **Checkpoint**: Dashboard tab is fully functional and independently demonstrable.
 
@@ -88,11 +88,11 @@
 
 ### Implementation for US2
 
-- [ ] T201 [P] [US2] Cytoscape stylesheet in `data/architecture.py`: define `CYTOSCAPE_STYLESHEET` list — one style rule per `category` value setting `background-color`, `shape` (`rectangle` for all), `width`, `height`, `font-size: 11px`, `text-wrap: wrap`, `text-max-width: 80px`; arrow edges styled with `target-arrow-shape: triangle`, `curve-style: bezier`, `line-color: #6C757D` — `data/architecture.py`
-- [ ] T202 [P] [US2] Architecture tab layout (`tabs/architecture.py`): `html.H4("End-to-End Data Platform Architecture")`, one-paragraph narrative, `cyto.Cytoscape(id="arch-diagram", elements=get_elements(), stylesheet=CYTOSCAPE_STYLESHEET, layout={"name":"dagre","rankDir":"LR","nodeSep":30,"rankSep":80}, style={"width":"100%","height":"520px"})`, color-coded legend row (`dbc.Badge` per category), and a `dbc.Card(id="node-detail-panel")` below the diagram for descriptions — `tabs/architecture.py`
-- [ ] T203 [US2] Node hover callback in `callbacks/architecture.py`: `@app.callback(Output("node-detail-panel","children"), Input("arch-diagram","tapNodeData"))`; on tap, calls `get_node_description(node_id)` and returns a `dbc.CardBody([html.H6(label), html.P(description)])` — `callbacks/architecture.py`
-- [ ] T204 [US2] Export affordance: `dbc.Button("⬇ Download Diagram", id="export-btn", size="sm", outline=True)` + `dcc.Download(id="diagram-download")` callback that serves `assets/architecture_export.svg` (a static SVG fallback generated once from the cytoscape render); alternatively, if export library unavailable, link `html.A("Download SVG", href="/assets/architecture_export.svg", target="_blank")` — `tabs/architecture.py`, `assets/architecture_export.svg`
-- [ ] T205 [SMOKE] [US2] Open Architecture tab; confirm diagram renders with visible nodes and arrows; hover one node; confirm description panel updates; check no callback errors — _(manual smoke test)_
+- [x] T201 [P] [US2] Cytoscape stylesheet in `data/architecture.py`: define `CYTOSCAPE_STYLESHEET` list — one style rule per `category` value setting `background-color`, `shape` (`rectangle` for all), `width`, `height`, `font-size: 11px`, `text-wrap: wrap`, `text-max-width: 80px`; arrow edges styled with `target-arrow-shape: triangle`, `curve-style: bezier`, `line-color: #6C757D` — `data/architecture.py`
+- [x] T202 [P] [US2] Architecture tab layout (`tabs/architecture.py`): `html.H4("End-to-End Data Platform Architecture")`, one-paragraph narrative, `cyto.Cytoscape(id="arch-diagram", elements=get_elements(), stylesheet=CYTOSCAPE_STYLESHEET, layout={"name":"dagre","rankDir":"LR","nodeSep":30,"rankSep":80}, style={"width":"100%","height":"520px"})`, color-coded legend row (`dbc.Badge` per category), and a `dbc.Card(id="node-detail-panel")` below the diagram for descriptions — `tabs/architecture.py`
+- [x] T203 [US2] Node hover callback in `callbacks/architecture.py`: `@app.callback(Output("node-detail-panel","children"), Input("arch-diagram","tapNodeData"))`; on tap, calls `get_node_description(node_id)` and returns a `dbc.CardBody([html.H6(label), html.P(description)])` — `callbacks/architecture.py`
+- [x] T204 [US2] Export affordance: `dbc.Button("⬇ Download Diagram", id="export-btn", size="sm", outline=True)` + `dcc.Download(id="diagram-download")` callback that serves `assets/architecture_export.svg` (a static SVG fallback generated once from the cytoscape render); alternatively, if export library unavailable, link `html.A("Download SVG", href="/assets/architecture_export.svg", target="_blank")` — `tabs/architecture.py`, `assets/architecture_export.svg`
+- [x] T205 [SMOKE] [US2] Open Architecture tab; confirm diagram renders with visible nodes and arrows; hover one node; confirm description panel updates; check no callback errors — _(manual smoke test)_
 
 **Checkpoint**: Architecture tab is fully functional and independently demonstrable.
 
@@ -108,10 +108,10 @@
 
 ### Implementation for US1
 
-- [ ] T301 [P] [US1] Hero section (`tabs/home.py`): `html.H1("Databricks Platform Demo")`, `html.H5("From raw data to AI-powered insights — a live end-to-end reference architecture")`, a `dbc.Card` with the narrative paragraph explaining the retail analytics problem and Medallion architecture approach — `tabs/home.py`
-- [ ] T302 [P] [US1] Three navigation preview cards (`tabs/home.py`, `callbacks/navigation.py`): `dbc.Row` of three `dbc.Card` components — "Home" (active, no link), "Architecture" (description + `dbc.Button("Explore →", id="nav-to-arch")`), "Dashboard" (description + `dbc.Button("Explore →", id="nav-to-dash")`); callback in `callbacks/navigation.py` on each button click updates `app-tabs.value` to `"tab-architecture"` or `"tab-dashboard"` — `tabs/home.py`, `callbacks/navigation.py`
-- [ ] T303 [P] [US1] Metadata footer (`tabs/home.py`): `dbc.Row` with three `html.Small` cells — Audience: "Data Engineers, Architects, Data Leaders", Domain: "Retail / E-Commerce Analytics (fixture data)", Links: `html.A("GitHub Repo", href="#")` + `html.A("Databricks Docs", href="#")`; placeholder `href="#"` accepted in initial build — `tabs/home.py`
-- [ ] T304 [SMOKE] [US1] Open Home tab; confirm hero text visible; click "Architecture →" card button → app switches to Architecture tab; click browser back or "Home" tab → Home scroll position intact — _(manual smoke test)_
+- [x] T301 [P] [US1] Hero section (`tabs/home.py`): `html.H1("Databricks Platform Demo")`, `html.H5("From raw data to AI-powered insights — a live end-to-end reference architecture")`, a `dbc.Card` with the narrative paragraph explaining the retail analytics problem and Medallion architecture approach — `tabs/home.py`
+- [x] T302 [P] [US1] Three navigation preview cards (`tabs/home.py`, `callbacks/navigation.py`): `dbc.Row` of three `dbc.Card` components — "Home" (active, no link), "Architecture" (description + `dbc.Button("Explore →", id="nav-to-arch")`), "Dashboard" (description + `dbc.Button("Explore →", id="nav-to-dash")`); callback in `callbacks/navigation.py` on each button click updates `app-tabs.value` to `"tab-architecture"` or `"tab-dashboard"` — `tabs/home.py`, `callbacks/navigation.py`
+- [x] T303 [P] [US1] Metadata footer (`tabs/home.py`): `dbc.Row` with three `html.Small` cells — Audience: "Data Engineers, Architects, Data Leaders", Domain: "Retail / E-Commerce Analytics (fixture data)", Links: `html.A("GitHub Repo", href="#")` + `html.A("Databricks Docs", href="#")`; placeholder `href="#"` accepted in initial build — `tabs/home.py`
+- [x] T304 [SMOKE] [US1] Open Home tab; confirm hero text visible; click "Architecture →" card button → app switches to Architecture tab; click browser back or "Home" tab → Home scroll position intact — _(manual smoke test)_
 
 **Checkpoint**: Home tab is fully functional and independently demonstrable.
 
@@ -123,10 +123,10 @@
 
 **Depends on**: Phases 2, 3, 4 complete
 
-- [ ] T401 [BLOCKING] Wire all tab modules into `app.py`: import `tabs/home.py`, `tabs/architecture.py`, `tabs/dashboard.py`; import `callbacks/chat.py`, `callbacks/architecture.py`, `callbacks/navigation.py`; assign each `dcc.Tab.children` to the corresponding layout function return value; confirm `app.layout` serializes without `DuplicateCallbackOutput` — `app.py`
-- [ ] T402 [BLOCKING] Full rehearsed path walk: Home → read hero → click "Architecture →" → hover "Gold — Enriched" node → verify description → click "Dashboard" tab → read 4 KPI tiles → type "total revenue" → verify response → type "which category is growing fastest" → verify response → type "are there any anomalies" → verify anomaly name + ORD-48821 + remediation step appear — _(manual validation)_
-- [ ] T403 [BLOCKING] Success-criteria mapping: for each SC in `specs/001-databricks-demo-app/spec.md` (SC-001 through SC-006), document "Met / Partially Met / Not Met" with one-line evidence in a comment block at the top of `app.py` — `app.py`
-- [ ] T404 [BLOCKING] Tag the last green commit: `git tag demo-stable-v1` so the demo can revert in under 30 seconds if Polish tasks destabilize the build — _(git command)_
+- [x] T401 [BLOCKING] Wire all tab modules into `app.py`: import `tabs/home.py`, `tabs/architecture.py`, `tabs/dashboard.py`; import `callbacks/chat.py`, `callbacks/architecture.py`, `callbacks/navigation.py`; assign each `dcc.Tab.children` to the corresponding layout function return value; confirm `app.layout` serializes without `DuplicateCallbackOutput` — `app.py`
+- [x] T402 [BLOCKING] Full rehearsed path walk: Home → read hero → click "Architecture →" → hover "Gold — Enriched" node → verify description → click "Dashboard" tab → read 4 KPI tiles → type "total revenue" → verify response → type "which category is growing fastest" → verify response → type "are there any anomalies" → verify anomaly name + ORD-48821 + remediation step appear — _(manual validation)_
+- [x] T403 [BLOCKING] Success-criteria mapping: for each SC in `specs/001-databricks-demo-app/spec.md` (SC-001 through SC-006), document "Met / Partially Met / Not Met" with one-line evidence in a comment block at the top of `app.py` — `app.py`
+- [x] T404 [BLOCKING] Tag the last green commit: `git tag demo-stable-v1` so the demo can revert in under 30 seconds if Polish tasks destabilize the build — _(git command)_
 
 **Checkpoint**: Full demo path walks cleanly. All six success criteria mapped. Green tag exists.
 
@@ -139,7 +139,7 @@
 - [ ] T501 [POLISH] Diagram visual refinement: audit Cytoscape stylesheet for icon/color consistency across all 8 category values; adjust `rankSep` / `nodeSep` if any node labels overlap at 1920×1080 — `data/architecture.py`
 - [ ] T502 [POLISH] Plotly chart polish: apply `theme.COLORS` list to both charts so category colors match the diagram legend; add `hovertemplate` with revenue formatted as `$%{y:,.0f}` — `tabs/dashboard.py`, `theme.py`
 - [ ] T503 [POLISH] Loading spinners: wrap `dcc.Graph(id="trend-chart")` and `dcc.Graph(id="category-chart")` and `#chat-messages` in `dcc.Loading(type="circle")` — `tabs/dashboard.py`
-- [ ] T504 [POLISH] README: write `README.md` with the 30-minute clone-to-deploy runbook (mirrors `specs/001-databricks-demo-app/quickstart.md`), `DEMO_MODE` toggle instructions, and the three pre-rehearsed chat questions — `README.md`
+- [x] T504 [POLISH] README: write `README.md` with the 30-minute clone-to-deploy runbook (mirrors `specs/001-databricks-demo-app/quickstart.md`), `DEMO_MODE` toggle instructions, and the three pre-rehearsed chat questions — `README.md`
 
 ---
 

@@ -1,94 +1,165 @@
 """
 Chat callback for the Dashboard tab.
-Registers a single callback that handles both keyboard-submit and button-click.
-Supports DEMO_MODE=fixture (default) and DEMO_MODE=live (Databricks Model Serving).
+Streaming via /api/chat-stream (SSE). The clientside callback handles
+the full send/stream/render cycle so the UI updates as tokens arrive.
 """
 
 from __future__ import annotations
 
-import json
-import logging
 import os
 
 import dash
-from dash import Input, Output, State, html
-import dash_bootstrap_components as dbc
+from dash import Input, Output, State
 
-from data.fixtures import KPI_SUMMARY, CHAT_QA
-from data.chat import get_chat_rules, match_rule, render_response
+from data.fixtures import KPI_SUMMARY
 
-logger = logging.getLogger(__name__)
-
-_DEMO_MODE        = os.environ.get("DEMO_MODE", "fixture")
-_DATABRICKS_HOST  = os.environ.get("DATABRICKS_HOST", "")
 _SERVING_ENDPOINT = os.environ.get("DATABRICKS_SERVING_ENDPOINT", "")
-_TOKEN            = os.environ.get("DATABRICKS_TOKEN", "")
-
-_RULES = get_chat_rules()
 
 _SYSTEM_PROMPT = (
-    "You are a data analytics assistant for a retail e-commerce platform. "
-    f"Current March 2025 metrics: "
-    f"Total MTD Revenue: ${KPI_SUMMARY['total_revenue_mtd']:,.0f} "
-    f"(+{KPI_SUMMARY['revenue_mom_pct']:.0f}% MoM). "
-    f"Total Orders: {KPI_SUMMARY['total_orders_mtd']:,}. "
-    f"Avg Order Value: ${KPI_SUMMARY['avg_order_value_mtd']:,.2f}. "
-    f"Top category: {KPI_SUMMARY['top_category']} "
-    f"(${KPI_SUMMARY['top_category_revenue']:,.0f}). "
-    f"Fastest growing: {KPI_SUMMARY['fastest_growing_category']} "
-    f"(+{KPI_SUMMARY['fastest_growing_qoq_pct']:.0f}% QoQ). "
-    f"Active anomalies: {KPI_SUMMARY['active_anomaly_count']} — "
-    "Electronics COGS spike on March 18 (margin 23%→6%, order ORD-48821). "
-    "Answer concisely and reference these numbers."
+    "You are a data analytics assistant embedded in a retail e-commerce dashboard. "
+    "Respond only to questions about the data below. "
+    "If greeted or asked something unrelated to the data, reply with one short sentence "
+    "inviting the user to ask about revenue, categories, orders, or anomalies — nothing else. "
+    "When answering data questions, be direct and concise: 2-3 sentences maximum. "
+    "Cite specific numbers from the dataset. Do not repeat every metric in every answer. "
+    "Do not use markdown headers or bullet lists unless the question explicitly asks for a breakdown.\n\n"
+    "Dataset — March 2025 (MTD):\n"
+    f"- Total Revenue: ${KPI_SUMMARY['total_revenue_mtd']:,.0f} "
+    f"(+{KPI_SUMMARY['revenue_mom_pct']:.0f}% vs February)\n"
+    f"- Total Orders: {KPI_SUMMARY['total_orders_mtd']:,} | "
+    f"Avg Order Value: ${KPI_SUMMARY['avg_order_value_mtd']:,.2f}\n"
+    f"- Top Category: {KPI_SUMMARY['top_category']} "
+    f"(${KPI_SUMMARY['top_category_revenue']:,.0f} revenue)\n"
+    f"- Fastest Growing: {KPI_SUMMARY['fastest_growing_category']} "
+    f"(+{KPI_SUMMARY['fastest_growing_qoq_pct']:.0f}% QoQ)\n"
+    f"- Active Anomalies: {KPI_SUMMARY['active_anomaly_count']} — "
+    "Electronics COGS spike on March 18: margin dropped from 23% to 6%, "
+    "linked to bulk order ORD-48821 (COGS +340% vs 7-day avg). "
+    "Recommended action: audit ORD-48821 and review Electronics cost records for March 16-20."
 )
 
+# ── Clientside callback — async Promise, handles streaming entirely in JS ───
 
-def _bubble(role: str, text: str) -> html.Div:
-    is_user = role == "user"
-    return html.Div(
-        text,
-        style={
-            "alignSelf":      "flex-end"   if is_user else "flex-start",
-            "background":     "#E04B2A"    if is_user else "#F1F3F4",
-            "color":          "white"      if is_user else "#212529",
-            "borderRadius":   "12px 12px 2px 12px" if is_user else "12px 12px 12px 2px",
-            "padding":        "8px 12px",
-            "maxWidth":       "90%",
-            "fontSize":       "12px",
-            "lineHeight":     "1.5",
-            "wordBreak":      "break-word",
-        },
-    )
+_STREAM_FN = """
+async function(nClicks, nSubmit, question, history) {
+    var dc = window.dash_clientside;
 
+    if (!question || !question.trim()) {
+        return [dc.no_update, dc.no_update, dc.no_update];
+    }
 
-def _call_model_serving(question: str, history: list[dict]) -> str | None:
-    if not _DATABRICKS_HOST or not _SERVING_ENDPOINT or not _TOKEN:
-        return None
-    try:
-        import requests as _requests  # local import to keep startup fast in fixture mode
-        messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
-        for turn in history[-6:]:  # last 6 turns for context
-            messages.append({"role": turn["role"], "content": turn["content"]})
-        messages.append({"role": "user", "content": question})
-        resp = _requests.post(
-            f"{_DATABRICKS_HOST}/serving-endpoints/{_SERVING_ENDPOINT}/invocations",
-            headers={
-                "Authorization": f"Bearer {_TOKEN}",
-                "Content-Type":  "application/json",
-            },
-            json={"messages": messages, "max_tokens": 300, "temperature": 0.1},
-            timeout=10,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
-    except Exception as exc:
-        logger.warning("Model Serving call failed: %s", exc)
-        return None
+    question = question.trim();
+    history  = history || [];
+
+    var el = document.getElementById('dash-chat-messages');
+    if (!el) return [dc.no_update, dc.no_update, dc.no_update];
+
+    /* Remove intro placeholder on first send */
+    var intro = el.querySelector('.chat-intro');
+    if (intro) intro.remove();
+
+    /* User bubble — appears immediately */
+    var userEl = document.createElement('div');
+    userEl.className = 'chat-bubble chat-bubble--user';
+    userEl.textContent = question;
+    el.appendChild(userEl);
+
+    /* Typing indicator — three bouncing dots */
+    var assistantEl = document.createElement('div');
+    assistantEl.className = 'chat-bubble chat-bubble--assistant chat-typing';
+    assistantEl.innerHTML = '<span></span><span></span><span></span>';
+    el.appendChild(assistantEl);
+    el.scrollTop = el.scrollHeight;
+
+    var fullText = '';
+    var streaming = false;
+
+    try {
+        var resp = await fetch('/api/chat-stream', {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify({question: question, history: history}),
+        });
+
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+        var reader  = resp.body.getReader();
+        var decoder = new TextDecoder();
+        var buf     = '';
+        var done    = false;
+
+        while (!done) {
+            var chunk = await reader.read();
+            if (chunk.done) break;
+
+            buf += decoder.decode(chunk.value, {stream: true});
+            var lines = buf.split('\\n');
+            buf = lines.pop();
+
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                if (!line.startsWith('data: ')) continue;
+
+                var payload = line.slice(6).trim();
+                if (payload === '[DONE]') { done = true; break; }
+
+                var parsed;
+                try { parsed = JSON.parse(payload); } catch (e) { continue; }
+
+                if (parsed.error) {
+                    assistantEl.classList.remove('chat-typing', 'chat-streaming');
+                    assistantEl.textContent = 'Could not reach the model — try again.';
+                    fullText = assistantEl.textContent;
+                    done = true;
+                    break;
+                }
+
+                if (parsed.token) {
+                    if (!streaming) {
+                        assistantEl.classList.remove('chat-typing');
+                        assistantEl.classList.add('chat-streaming');
+                        assistantEl.textContent = '';
+                        streaming = true;
+                    }
+                    fullText += parsed.token;
+                    assistantEl.textContent = fullText;
+                    el.scrollTop = el.scrollHeight;
+                }
+            }
+        }
+
+    } catch (err) {
+        assistantEl.classList.remove('chat-typing', 'chat-streaming');
+        assistantEl.textContent = 'Connection error — check your configuration.';
+        fullText = assistantEl.textContent;
+    }
+
+    assistantEl.classList.remove('chat-streaming');
+
+    /* Return Dash component JSON so React's vdom matches the DOM we built */
+    function bubble(role, text) {
+        return {
+            type:      'Div',
+            namespace: 'dash_html_components',
+            props:     {children: text, className: 'chat-bubble chat-bubble--' + role},
+        };
+    }
+
+    var newHistory = history.concat([
+        {role: 'user',      content: question},
+        {role: 'assistant', content: fullText || '(no response)'},
+    ]).slice(-20);
+
+    var bubbles = newHistory.map(function(t) { return bubble(t.role, t.content); });
+
+    return [bubbles, newHistory, ''];
+}
+"""
 
 
 def register(app: dash.Dash) -> None:
-
-    @app.callback(
+    app.clientside_callback(
+        _STREAM_FN,
         Output("dash-chat-messages", "children"),
         Output("dash-chat-store",    "data"),
         Output("dash-chat-input",    "value"),
@@ -98,33 +169,3 @@ def register(app: dash.Dash) -> None:
         State("dash-chat-store", "data"),
         prevent_initial_call=True,
     )
-    def handle_chat(n_clicks, n_submit, question, history):
-        if not question or not question.strip():
-            return dash.no_update, dash.no_update, dash.no_update
-
-        question = question.strip()
-        history  = history or []
-
-        # ---- determine response ------------------------------------------
-        rule = match_rule(question, _RULES)
-
-        if rule["is_anomaly_rule"]:
-            # Anomaly always uses fixture response regardless of DEMO_MODE
-            answer = render_response(rule, KPI_SUMMARY, CHAT_QA)
-        elif _DEMO_MODE == "live":
-            answer = _call_model_serving(question, history) or render_response(rule, KPI_SUMMARY, CHAT_QA)
-        else:
-            answer = render_response(rule, KPI_SUMMARY, CHAT_QA)
-
-        # ---- update history (keep last 20 turns) -------------------------
-        history = (history + [
-            {"role": "user",      "content": question},
-            {"role": "assistant", "content": answer},
-        ])[-20:]
-
-        # ---- render bubbles -----------------------------------------------
-        bubbles = []
-        for turn in history:
-            bubbles.append(_bubble(turn["role"], turn["content"]))
-
-        return bubbles, history, ""

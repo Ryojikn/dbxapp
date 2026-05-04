@@ -3,9 +3,6 @@ Architecture diagram data for the Databricks Platform Demo App.
 Provides Cytoscape elements (nodes + edges) for the Tab 2 diagram.
 """
 
-from theme import CATEGORY_COLORS
-
-# Node descriptions shown in the detail panel on hover/click
 _NODE_DESCRIPTIONS = {
     "postgres-db": (
         "PostgreSQL is the primary operational database storing transactional "
@@ -84,43 +81,81 @@ _NODE_DESCRIPTIONS = {
     ),
 }
 
-# Preset x/y positions for a clean left-to-right data-flow layout
+# Preset positions for all leaf nodes
 _POSITIONS = {
-    # Sources — column 1
-    "postgres-db":    {"x": 80,   "y": 80},
-    "salesforce-crm": {"x": 80,   "y": 200},
-    "s3-files":       {"x": 80,   "y": 320},
-    "kafka-stream":   {"x": 80,   "y": 440},
-    # Ingestion — column 2
-    "autoloader":     {"x": 280,  "y": 160},
-    "dlt-pipeline":   {"x": 280,  "y": 360},
-    # Unity Catalog — below medallion row (governance layer)
-    "unity-catalog":  {"x": 620,  "y": 420},
-    # Medallion — columns 3-5
-    "bronze-layer":   {"x": 480,  "y": 240},
-    "silver-layer":   {"x": 640,  "y": 240},
-    "gold-layer":     {"x": 800,  "y": 240},
-    # Consumers — column 6
-    "ml-pipeline":    {"x": 1000, "y": 160},
-    "bi-dashboard":   {"x": 1000, "y": 320},
-    # AI Agent — column 7
-    "ai-agent":       {"x": 1170, "y": 240},
+    "postgres-db":    {"x": 80,   "y": 90},
+    "salesforce-crm": {"x": 80,   "y": 210},
+    "s3-files":       {"x": 80,   "y": 330},
+    "kafka-stream":   {"x": 80,   "y": 450},
+    "autoloader":     {"x": 295,  "y": 170},
+    "dlt-pipeline":   {"x": 295,  "y": 375},
+    "unity-catalog":  {"x": 645,  "y": 440},
+    "bronze-layer":   {"x": 490,  "y": 255},
+    "silver-layer":   {"x": 645,  "y": 255},
+    "gold-layer":     {"x": 800,  "y": 255},
+    "ml-pipeline":    {"x": 1010, "y": 170},
+    "bi-dashboard":   {"x": 1010, "y": 330},
+    "ai-agent":       {"x": 1010, "y": 450},
 }
 
+# Leaf node metadata: (id, label, category)
 _NODES_META = [
     ("postgres-db",    "PostgreSQL DB",      "source"),
     ("salesforce-crm", "Salesforce CRM",     "source"),
     ("s3-files",       "S3 / File Drops",    "source"),
     ("kafka-stream",   "Kafka Stream",       "source"),
-    ("autoloader",     "Auto Loader (DLT)",  "ingestion"),
+    ("autoloader",     "Auto Loader",        "ingestion"),
     ("dlt-pipeline",   "Lakeflow Pipelines", "ingestion"),
     ("unity-catalog",  "Unity Catalog",      "catalog"),
-    ("bronze-layer",   "Bronze — Raw",       "bronze"),
-    ("silver-layer",   "Silver — Curated",   "silver"),
-    ("gold-layer",     "Gold — Enriched",    "gold"),
-    ("ml-pipeline",    "ML Model Pipeline",  "consumer"),
-    ("bi-dashboard",   "BI / Analytics",     "consumer"),
-    ("ai-agent",       "Anomaly AI Agent",   "agent"),
+    ("bronze-layer",   "Bronze",             "bronze"),
+    ("silver-layer",   "Silver",             "silver"),
+    ("gold-layer",     "Gold",               "gold"),
+    ("ml-pipeline",    "ML Pipeline",        "consumer"),
+    ("bi-dashboard",   "BI Dashboard",       "consumer"),
+    ("ai-agent",       "AI Agent",           "agent"),
+]
+
+# Parent zone assignment for each leaf node
+_NODE_PARENTS = {
+    "postgres-db":    "zone-sources",
+    "salesforce-crm": "zone-sources",
+    "s3-files":       "zone-sources",
+    "kafka-stream":   "zone-sources",
+    "autoloader":     "zone-ingestion",
+    "dlt-pipeline":   "zone-ingestion",
+    "bronze-layer":   "zone-medallion",
+    "silver-layer":   "zone-medallion",
+    "gold-layer":     "zone-medallion",
+    "unity-catalog":  "zone-medallion",
+    "ml-pipeline":    "zone-insights",
+    "bi-dashboard":   "zone-insights",
+    "ai-agent":       "zone-insights",
+}
+
+# Zone compound nodes (rendered as background regions)
+_ZONE_NODES = [
+    {
+        "data": {"id": "zone-sources",   "label": "DATA SOURCES"},
+        "classes": "zone-top zone-sources",
+    },
+    {
+        "data": {"id": "zone-lakehouse", "label": "DATABRICKS LAKEHOUSE"},
+        "classes": "zone-top zone-lakehouse",
+    },
+    {
+        "data": {"id": "zone-ingestion", "label": "INGESTION",
+                 "parent": "zone-lakehouse"},
+        "classes": "zone-sub",
+    },
+    {
+        "data": {"id": "zone-medallion", "label": "MEDALLION",
+                 "parent": "zone-lakehouse"},
+        "classes": "zone-sub",
+    },
+    {
+        "data": {"id": "zone-insights",  "label": "INSIGHT EXTRACTION"},
+        "classes": "zone-top zone-insights",
+    },
 ]
 
 _EDGES_META = [
@@ -140,17 +175,33 @@ _EDGES_META = [
     ("gold-layer",     "ai-agent",       "monitor"),
 ]
 
+# Category colors used in the stylesheet
+_CAT_COLORS = {
+    "source":    {"bg": "#243552", "border": "#3A4E6A"},
+    "ingestion": {"bg": "#1E3A3A", "border": "#2E5252"},
+    "bronze":    {"bg": "#3C2A18", "border": "#5A4028"},
+    "silver":    {"bg": "#28343E", "border": "#3A4A58"},
+    "gold":      {"bg": "#3A3210", "border": "#5A4E20"},
+    "catalog":   {"bg": "#183A2C", "border": "#285A48"},
+    "consumer":  {"bg": "#1A3A24", "border": "#2A5A38"},
+    "agent":     {"bg": "#301838", "border": "#4A2858"},
+}
+
 
 def get_nodes() -> list[dict]:
-    nodes = []
+    nodes = list(_ZONE_NODES)
     for node_id, label, category in _NODES_META:
+        parent = _NODE_PARENTS.get(node_id)
+        data = {
+            "id":          node_id,
+            "label":       label,
+            "category":    category,
+            "description": _NODE_DESCRIPTIONS.get(node_id, ""),
+        }
+        if parent:
+            data["parent"] = parent
         nodes.append({
-            "data": {
-                "id":          node_id,
-                "label":       label,
-                "category":    category,
-                "description": _NODE_DESCRIPTIONS.get(node_id, ""),
-            },
+            "data":     data,
             "position": _POSITIONS[node_id],
             "classes":  category,
         })
@@ -177,62 +228,128 @@ def get_node_description(node_id: str) -> str:
     return _NODE_DESCRIPTIONS.get(node_id, "")
 
 
-CYTOSCAPE_STYLESHEET = [
-    # Default node style
-    {
-        "selector": "node",
-        "style": {
-            "label":          "data(label)",
-            "shape":          "roundrectangle",
-            "width":          "130px",
-            "height":         "50px",
-            "text-valign":    "center",
-            "text-halign":    "center",
-            "text-wrap":      "wrap",
-            "text-max-width": "120px",
-            "font-size":      "10px",
-            "font-family":    "Inter, sans-serif",
-            "color":          "#FFFFFF",
-            "font-weight":    "600",
-            "border-width":   "2px",
-            "border-color":   "rgba(255,255,255,0.3)",
+def _make_stylesheet() -> list[dict]:
+    styles = [
+        # Default leaf node
+        {
+            "selector": "node",
+            "style": {
+                "label":           "data(label)",
+                "shape":           "roundrectangle",
+                "width":           "130px",
+                "height":          "40px",
+                "text-valign":     "center",
+                "text-halign":     "center",
+                "text-wrap":       "wrap",
+                "text-max-width":  "120px",
+                "font-size":       "11px",
+                "font-family":     "Inter, 'Segoe UI', system-ui, sans-serif",
+                "color":           "#E8E4E0",
+                "font-weight":     "600",
+                "border-width":    "1px",
+                "border-color":    "rgba(255,255,255,0.15)",
+                "background-color":"#2A2624",
+                "cursor":          "pointer",
+            },
         },
-    },
-    # Default edge style
-    {
-        "selector": "edge",
-        "style": {
-            "curve-style":         "bezier",
-            "target-arrow-shape":  "triangle",
-            "target-arrow-color":  "#9E9E9E",
-            "line-color":          "#9E9E9E",
-            "width":               "2px",
-            "font-size":           "9px",
-            "color":               "#555",
-            "label":               "data(label)",
-            "text-rotation":       "autorotate",
+        # Selected state — brand orange glow
+        {
+            "selector": "node:selected",
+            "style": {
+                "overlay-color":   "#E04B2A",
+                "overlay-opacity": 0.14,
+                "border-color":    "#E04B2A",
+                "border-width":    "2.5px",
+                "z-index":         10,
+            },
         },
-    },
-    # Registration edges (UC) — dashed
-    {
-        "selector": ".registration-edge",
-        "style": {
-            "line-style":         "dashed",
-            "line-color":         CATEGORY_COLORS["catalog"],
-            "target-arrow-color": CATEGORY_COLORS["catalog"],
-            "width":              "1.5px",
+        # Click feedback
+        {
+            "selector": "node:active",
+            "style": {
+                "overlay-opacity": 0.08,
+                "overlay-color":   "#FFFFFF",
+            },
         },
-    },
-    # Highlighted node on tap
-    {
-        "selector": "node:selected",
-        "style": {"border-width": "3px", "border-color": "#FFFFFF", "opacity": "1"},
-    },
-]
+        # Default edge
+        {
+            "selector": "edge",
+            "style": {
+                "curve-style":        "bezier",
+                "target-arrow-shape": "triangle",
+                "target-arrow-color": "#3A3835",
+                "line-color":         "#3A3835",
+                "width":              "1.5px",
+                "opacity":            0.75,
+                "arrow-scale":        0.85,
+            },
+        },
+        # UC registration edges — dashed
+        {
+            "selector": ".registration-edge",
+            "style": {
+                "line-style":         "dashed",
+                "line-color":         "#285A48",
+                "target-arrow-color": "#285A48",
+                "width":              "1.2px",
+                "line-dash-pattern":  [4, 7],
+                "opacity":            0.55,
+            },
+        },
+        # Zone top-level compound nodes
+        {
+            "selector": ".zone-top",
+            "style": {
+                "shape":             "roundrectangle",
+                "background-opacity": 0.28,
+                "border-width":      "1px",
+                "border-opacity":    0.35,
+                "font-size":         "9px",
+                "font-weight":       "bold",
+                "text-valign":       "top",
+                "text-halign":       "center",
+                "text-margin-y":     13,
+                "padding":           "24px",
+                "events":            "no",
+                "cursor":            "default",
+            },
+        },
+        {"selector": ".zone-sources",
+         "style": {"background-color": "#1C2A3E", "border-color": "#2A3A52", "color": "#4A6080"}},
+        {"selector": ".zone-lakehouse",
+         "style": {"background-color": "#1A1714", "border-color": "#2A2520", "color": "#5A5040"}},
+        {"selector": ".zone-insights",
+         "style": {"background-color": "#182622", "border-color": "#28352E", "color": "#406040"}},
+        # Sub-zone compound nodes within lakehouse
+        {
+            "selector": ".zone-sub",
+            "style": {
+                "shape":             "roundrectangle",
+                "background-color":  "#1A1714",
+                "background-opacity": 0.12,
+                "border-width":      "0.5px",
+                "border-color":      "rgba(255,255,255,0.10)",
+                "font-size":         "8px",
+                "font-weight":       "bold",
+                "text-valign":       "top",
+                "text-halign":       "center",
+                "text-margin-y":     8,
+                "color":             "#484844",
+                "padding":           "18px",
+                "events":            "no",
+                "cursor":            "default",
+            },
+        },
+    ]
 
-# Per-category background colors
-for _cat, _color in CATEGORY_COLORS.items():
-    CYTOSCAPE_STYLESHEET.append({
-        "selector": f".{_cat}",
-        "style": {"background-color": _color},
-    })
+    # Per-category fills
+    for cat, c in _CAT_COLORS.items():
+        styles.append({
+            "selector": f".{cat}",
+            "style": {"background-color": c["bg"], "border-color": c["border"]},
+        })
+
+    return styles
+
+
+CYTOSCAPE_STYLESHEET = _make_stylesheet()
