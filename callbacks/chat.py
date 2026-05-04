@@ -54,6 +54,10 @@ async function(nClicks, nSubmit, question, history) {
     var el = document.getElementById('dash-chat-messages');
     if (!el) return [dc.no_update, dc.no_update, dc.no_update];
 
+    /* Clear input immediately */
+    var inputEl = document.getElementById('dash-chat-input');
+    if (inputEl) inputEl.value = '';
+
     /* Remove intro placeholder on first send */
     var intro = el.querySelector('.chat-intro');
     if (intro) intro.remove();
@@ -136,23 +140,15 @@ async function(nClicks, nSubmit, question, history) {
 
     assistantEl.classList.remove('chat-streaming');
 
-    /* Return Dash component JSON so React's vdom matches the DOM we built */
-    function bubble(role, text) {
-        return {
-            type:      'Div',
-            namespace: 'dash_html_components',
-            props:     {children: text, className: 'chat-bubble chat-bubble--' + role},
-        };
-    }
-
     var newHistory = history.concat([
         {role: 'user',      content: question},
         {role: 'assistant', content: fullText || '(no response)'},
     ]).slice(-20);
 
-    var bubbles = newHistory.map(function(t) { return bubble(t.role, t.content); });
-
-    return [bubbles, newHistory, ''];
+    /* Leave the DOM as-is (imperative bubbles own the display).
+       Only update the store and clear the input — returning children
+       here would cause React to double-render the bubbles. */
+    return [dc.no_update, newHistory, ''];
 }
 """
 

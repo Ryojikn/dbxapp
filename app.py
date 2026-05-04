@@ -70,9 +70,9 @@ def _chat_stream():
             import requests as _requests
             from databricks.sdk import WorkspaceClient
             w    = WorkspaceClient()
-            auth = {}
-            w.config.authenticate(auth)
             host = w.config.host.rstrip('/')
+            auth = w.config.authenticate()
+            print(f"[chat-stream] host={host!r} endpoint={endpoint!r} auth_keys={list(auth.keys())}", flush=True)
 
             with _requests.post(
                 f"{host}/serving-endpoints/{endpoint}/invocations",
@@ -100,6 +100,8 @@ def _chat_stream():
                         pass
 
         except Exception as exc:
+            import traceback
+            traceback.print_exc()
             yield f"data: {_json.dumps({'error': str(exc)})}\n\n"
 
         yield 'data: [DONE]\n\n'
